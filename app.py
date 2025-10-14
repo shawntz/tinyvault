@@ -126,7 +126,9 @@ def unwrap_key():
         resource_name = data.get('authorization', {}).get('resource_name', '')
         user_email = data.get('authorization', {}).get('user_email', '')
 
-        logger.info(f"Unwrap request for resource: {resource_name}, user: {user_email}")
+        safe_resource_name = resource_name.replace('\r', '').replace('\n', '')
+        safe_user_email = user_email.replace('\r', '').replace('\n', '')
+        logger.info(f"Unwrap request for resource: {safe_resource_name}, user: {safe_user_email}")
 
         # Check authorization
         if user_email and not is_authorized(user_email):
