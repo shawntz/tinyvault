@@ -98,7 +98,7 @@ def wrap_key():
 
     except Exception as e:
         logger.error(f"Wrap operation failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/v1/unwrap', methods=['POST'])
