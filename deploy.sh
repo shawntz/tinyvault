@@ -59,6 +59,25 @@ fi
 # Set project
 gcloud config set project $PROJECT_ID
 
+# Grant Cloud Build permissions for building from source
+echo ""
+echo "Setting up Cloud Build permissions..."
+PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
+
+# Grant Storage Object Viewer role (needed for Cloud Build)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --role="roles/storage.objectViewer" \
+    --condition=None \
+    --quiet 2>/dev/null || echo "Note: Storage permissions may already be set"
+
+# Grant Cloud Build Service Account role
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+    --role="roles/cloudbuild.builds.builder" \
+    --condition=None \
+    --quiet 2>/dev/null || echo "Note: Cloud Build permissions may already be set"
+
 # Build and deploy to Cloud Run
 echo ""
 echo "Building and deploying to Cloud Run..."
