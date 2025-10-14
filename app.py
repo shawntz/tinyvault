@@ -85,7 +85,8 @@ def wrap_key():
 
         # Check authorization (for single user, this is simple)
         if user_email and not is_authorized(user_email):
-            logger.warning(f"Unauthorized user: {user_email}")
+            sanitized_user_email = user_email.replace('\r', '').replace('\n', '')
+            logger.warning(f"Unauthorized user: {sanitized_user_email}")
             return jsonify({'error': 'User not authorized'}), 403
 
         # Wrap the DEK using KMS
