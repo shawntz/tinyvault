@@ -5,6 +5,7 @@ Implements the Key Access Control List Service for Google Workspace encryption
 import os
 import logging
 from flask import Flask, request, jsonify
+import re
 from functools import wraps
 from kms_service import KMSService
 from auth import verify_service_account
@@ -80,8 +81,11 @@ def wrap_key():
         plaintext_dek = data['key']
         resource_name = data.get('authorization', {}).get('resource_name', '')
         user_email = data.get('authorization', {}).get('user_email', '')
-
-        logger.info(f"Wrap request for resource: {resource_name}, user: {user_email}")
+        # Sanitize user input before logging to prevent log injection
+        # Remove all control/non-printable characters, not just line breaks
+        safe_resource_name = re.sub(r'[^\x20-\x7E]', '', resource_name)
+        safe_user_email = re.sub(r'[^\x20-\x7E]', '', user_email)
+        logger.info(f"Wrap request for resource: {safe_resource_name}, user: {safe_user_email}")
 
         # Check authorization (for single user, this is simple)
         if user_email and not is_authorized(user_email):
