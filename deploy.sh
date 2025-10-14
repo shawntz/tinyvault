@@ -79,6 +79,14 @@ SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
     --region $REGION \
     --format 'value(status.url)')
 
+# Allow public access for Google Workspace to reach the endpoint
+echo ""
+echo "Setting up public access for Google Workspace..."
+gcloud run services add-iam-policy-binding $SERVICE_NAME \
+    --region=$REGION \
+    --member=allUsers \
+    --role=roles/run.invoker
+
 echo ""
 echo "========================================="
 echo "Deployment successful!"
@@ -92,8 +100,8 @@ if [[ $USE_CUSTOM_DOMAIN =~ ^[Yy]$ ]]; then
     echo "Setting up custom domain: $CUSTOM_DOMAIN"
     echo ""
 
-    # Create domain mapping
-    gcloud run domain-mappings create \
+    # Create domain mapping (using beta for region support)
+    gcloud beta run domain-mappings create \
         --service $SERVICE_NAME \
         --domain $CUSTOM_DOMAIN \
         --region $REGION 2>&1 | tee /tmp/domain-mapping-output.txt
@@ -115,7 +123,7 @@ if [[ $USE_CUSTOM_DOMAIN =~ ^[Yy]$ ]]; then
     echo "3. Your endpoint will be available at: https://$CUSTOM_DOMAIN"
     echo ""
     echo "To check status:"
-    echo "  gcloud run domain-mappings describe $CUSTOM_DOMAIN --region $REGION"
+    echo "  gcloud beta run domain-mappings describe $CUSTOM_DOMAIN --region $REGION"
     echo ""
 
     FINAL_URL="https://$CUSTOM_DOMAIN"
