@@ -161,8 +161,14 @@ def privileged_unwrap():
 
         wrapped_key = data['wrappedKey']
         reason = data.get('reason', 'Admin access')
+        # Sanitize user input to mitigate log injection
+        if isinstance(reason, str):
+            reason = reason.replace('\r', '').replace('\n', '')
+        user_email_log = getattr(request, 'user_email', '')
+        if isinstance(user_email_log, str):
+            user_email_log = user_email_log.replace('\r', '').replace('\n', '')
 
-        logger.warning(f"Privileged unwrap requested. Reason: {reason}, User: {request.user_email}")
+        logger.warning(f"Privileged unwrap requested. Reason: {reason}, User: {user_email_log}")
 
         # For single user setup, privileged unwrap just uses same logic
         plaintext_key = kms_service.unwrap(wrapped_key)
