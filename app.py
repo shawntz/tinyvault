@@ -143,7 +143,7 @@ def unwrap_key():
 
     except Exception as e:
         logger.error(f"Unwrap operation failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error has occurred.'}), 500
 
 
 @app.route('/v1/privileged_unwrap', methods=['POST'])
