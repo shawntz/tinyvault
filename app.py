@@ -174,7 +174,7 @@ def privileged_unwrap():
 
     except Exception as e:
         logger.error(f"Privileged unwrap operation failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Privileged unwrap operation failed.'}), 500
 
 
 def is_authorized(user_email):
