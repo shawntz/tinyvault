@@ -581,8 +581,6 @@ docker run -d \
 ### Docker Compose
 
 ```yaml
-version: '3.8'
-
 services:
   tinyvault:
     image: shawnschwartz/tinyvault:latest
