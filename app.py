@@ -51,10 +51,37 @@ def require_auth(f):
     return decorated_function
 
 
+@app.route('/', methods=['GET'])
+def root():
+    """Root endpoint - Service information"""
+    return jsonify({
+        'service': 'TinyVault KACLS',
+        'description': 'Google Workspace Client-Side Encryption Key Service',
+        'version': '1.0',
+        'endpoints': {
+            'health': '/health',
+            'status': '/status',
+            'wrap': '/v1/wrap',
+            'unwrap': '/v1/unwrap',
+            'privileged_unwrap': '/v1/privileged_unwrap'
+        }
+    }), 200
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
     return jsonify({'status': 'healthy'}), 200
+
+
+@app.route('/status', methods=['GET'])
+def status():
+    """Status endpoint for Google Workspace CSE discovery"""
+    return jsonify({
+        'status': 'ok',
+        'service': 'TinyVault KACLS',
+        'ready': True
+    }), 200
 
 
 @app.route('/v1/wrap', methods=['POST'])
