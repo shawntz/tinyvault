@@ -5,6 +5,7 @@ Implements the Key Access Control List Service for Google Workspace encryption
 import os
 import logging
 from flask import Flask, request, jsonify
+import re
 from functools import wraps
 from kms_service import KMSService
 from auth import verify_service_account
@@ -80,12 +81,16 @@ def wrap_key():
         plaintext_dek = data['key']
         resource_name = data.get('authorization', {}).get('resource_name', '')
         user_email = data.get('authorization', {}).get('user_email', '')
-
-        logger.info(f"Wrap request for resource: {resource_name}, user: {user_email}")
+        # Sanitize user input before logging to prevent log injection
+        # Remove all control/non-printable characters, not just line breaks
+        safe_resource_name = re.sub(r'[^\x20-\x7E]', '', resource_name)
+        safe_user_email = re.sub(r'[^\x20-\x7E]', '', user_email)
+        logger.info(f"Wrap request for resource: {safe_resource_name}, user: {safe_user_email}")
 
         # Check authorization (for single user, this is simple)
         if user_email and not is_authorized(user_email):
-            logger.warning(f"Unauthorized user: {user_email}")
+            sanitized_user_email = user_email.replace('\r', '').replace('\n', '')
+            logger.warning(f"Unauthorized user: {sanitized_user_email}")
             return jsonify({'error': 'User not authorized'}), 403
 
         # Wrap the DEK using KMS
@@ -98,7 +103,7 @@ def wrap_key():
 
     except Exception as e:
         logger.error(f"Wrap operation failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Internal server error'}), 500
 
 
 @app.route('/v1/unwrap', methods=['POST'])
@@ -126,11 +131,14 @@ def unwrap_key():
         resource_name = data.get('authorization', {}).get('resource_name', '')
         user_email = data.get('authorization', {}).get('user_email', '')
 
-        logger.info(f"Unwrap request for resource: {resource_name}, user: {user_email}")
+        safe_resource_name = resource_name.replace('\r', '').replace('\n', '')
+        safe_user_email = user_email.replace('\r', '').replace('\n', '')
+        logger.info(f"Unwrap request for resource: {safe_resource_name}, user: {safe_user_email}")
 
         # Check authorization
         if user_email and not is_authorized(user_email):
-            logger.warning(f"Unauthorized user: {user_email}")
+            safe_user_email = user_email.replace("\n", "").replace("\r", "")
+            logger.warning(f"Unauthorized user: {safe_user_email}")
             return jsonify({'error': 'User not authorized'}), 403
 
         # Unwrap the DEK using KMS
@@ -143,7 +151,7 @@ def unwrap_key():
 
     except Exception as e:
         logger.error(f"Unwrap operation failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'An internal error has occurred.'}), 500
 
 
 @app.route('/v1/privileged_unwrap', methods=['POST'])
@@ -161,8 +169,14 @@ def privileged_unwrap():
 
         wrapped_key = data['wrappedKey']
         reason = data.get('reason', 'Admin access')
+        # Sanitize user input to mitigate log injection
+        if isinstance(reason, str):
+            reason = reason.replace('\r', '').replace('\n', '')
+        user_email_log = getattr(request, 'user_email', '')
+        if isinstance(user_email_log, str):
+            user_email_log = user_email_log.replace('\r', '').replace('\n', '')
 
-        logger.warning(f"Privileged unwrap requested. Reason: {reason}, User: {request.user_email}")
+        logger.warning(f"Privileged unwrap requested. Reason: {reason}, User: {user_email_log}")
 
         # For single user setup, privileged unwrap just uses same logic
         plaintext_key = kms_service.unwrap(wrapped_key)
@@ -174,7 +188,7 @@ def privileged_unwrap():
 
     except Exception as e:
         logger.error(f"Privileged unwrap operation failed: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Privileged unwrap operation failed.'}), 500
 
 
 def is_authorized(user_email):
