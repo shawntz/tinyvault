@@ -260,15 +260,15 @@ gcloud run domain-mappings create \
 
 ```
 ┌─────────────────┐
-│  Google Workspace│
+│ Google Workspace│
 │  (Gmail, Drive) │
 └────────┬────────┘
-         │ KACLS Protocol
+         │   KACLS Protocol
          │ (wrap/unwrap keys)
          ▼
 ┌─────────────────┐
-│   TinyVault    │
-│  (Cloud Run)    │
+│    TinyVault    │
+│   (Cloud Run)   │
 │  - Flask API    │
 │  - OAuth2 auth  │
 └────────┬────────┘
@@ -930,7 +930,7 @@ TinyVault is a **DIY hobby project**, not a professional managed service. There 
 - **Issues**: [GitHub Issues](https://github.com/shawntz/tinyvault/issues)
 - **Discussions**: [GitHub Discussions](https://github.com/shawntz/tinyvault/discussions)
 
-For security vulnerabilities, please email: [Your security contact email]
+For security vulnerabilities, please email: [SecOps@shawnschwartz.com]
 
 ---
 
@@ -987,12 +987,6 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - [ ] Multi-key support (different keys per user/department)
 - [ ] Web UI for management
 - [ ] Automated key rotation
-- [ ] Terraform deployment templates
-- [ ] AWS KMS support
-- [ ] Azure Key Vault support
-- [ ] HashiCorp Vault integration
-- [ ] Metrics dashboard
-- [ ] Slack/Discord notifications for KMS events
 
 ---
 
