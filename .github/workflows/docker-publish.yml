@@ -87,6 +87,7 @@ jobs:
           password: ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build and push Docker image
+        id: docker_build
         if: steps.check_docker.outputs.docker_configured == 'true'
         uses: docker/build-push-action@v5
         with:
@@ -141,7 +142,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Docker Hub Description
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check_docker.outputs.docker_configured == 'true'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check_docker.outputs.docker_configured == 'true' && steps.docker_build.outcome == 'success'
+        continue-on-error: true  # Don't fail workflow if description update fails
         uses: peter-evans/dockerhub-description@v4
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
