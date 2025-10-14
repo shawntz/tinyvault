@@ -1,0 +1,135 @@
+name: Build and Push to Docker Hub
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+env:
+  DOCKER_IMAGE: ${{ secrets.DOCKER_USERNAME }}/tinyvault
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all history for proper tagging
+
+      - name: Generate version tag
+        id: version
+        run: |
+          # Get current date in YYYY.MM format
+          YEAR=$(date +%Y)
+          MONTH=$(date +%m)
+          DATE_PREFIX="${YEAR}.${MONTH}"
+
+          # Fetch all tags
+          git fetch --tags
+
+          # Find all tags matching current month pattern
+          EXISTING_TAGS=$(git tag -l "${DATE_PREFIX}.*" | sort -V)
+
+          if [ -z "$EXISTING_TAGS" ]; then
+            # No tags for this month yet, start at .0
+            PATCH=0
+          else
+            # Get the latest tag for this month and extract patch number
+            LATEST_TAG=$(echo "$EXISTING_TAGS" | tail -1)
+            PATCH=$(echo "$LATEST_TAG" | cut -d'.' -f3)
+            # Increment patch
+            PATCH=$((PATCH + 1))
+          fi
+
+          VERSION="${DATE_PREFIX}.${PATCH}"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Generated version: $VERSION"
+
+      - name: Create and push tag
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        run: |
+          VERSION=${{ steps.version.outputs.version }}
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "$VERSION" -m "Release $VERSION"
+          git push origin "$VERSION"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: ${{ github.event_name != 'pull_request' && github.ref == 'refs/heads/main' }}
+          tags: |
+            ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.version }}
+            ${{ env.DOCKER_IMAGE }}:latest
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.version }}
+            org.opencontainers.image.created=${{ github.event.head_commit.timestamp }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Create GitHub Release
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: Release ${{ steps.version.outputs.version }}
+          body: |
+            ## TinyVault ${{ steps.version.outputs.version }}
+
+            **Released**: ${{ github.event.head_commit.timestamp }}
+            **Commit**: ${{ github.sha }}
+
+            ### Docker Images
+
+            ```bash
+            docker pull ${{ env.DOCKER_IMAGE }}:${{ steps.version.outputs.version }}
+            docker pull ${{ env.DOCKER_IMAGE }}:latest
+            ```
+
+            ### Deploy to Cloud Run
+
+            ```bash
+            ./deploy-dockerhub.sh
+            ```
+
+            ### Changes
+
+            See [CHANGELOG.md](CHANGELOG.md) for details.
+
+            ---
+
+            🔐 **TinyVault**: DIY Google Workspace encryption for ~$0.10/month
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Docker Hub Description
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        uses: peter-evans/dockerhub-description@v4
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          repository: ${{ secrets.DOCKER_USERNAME }}/tinyvault
+          short-description: "DIY Google Workspace encryption for ~$0.10/month"
+          readme-filepath: ./DOCKER.md
