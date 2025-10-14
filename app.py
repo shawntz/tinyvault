@@ -130,7 +130,8 @@ def unwrap_key():
 
         # Check authorization
         if user_email and not is_authorized(user_email):
-            logger.warning(f"Unauthorized user: {user_email}")
+            safe_user_email = user_email.replace("\n", "").replace("\r", "")
+            logger.warning(f"Unauthorized user: {safe_user_email}")
             return jsonify({'error': 'User not authorized'}), 403
 
         # Unwrap the DEK using KMS
