@@ -43,8 +43,8 @@ CORS(app,
 def log_incoming_request():
     try:
         logger.info(f">>> {request.method} {request.path} Origin={request.headers.get('Origin', '')}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to log incoming request: {e}")
 
 # Attach CORS headers to all responses when appropriate
 @app.after_request
