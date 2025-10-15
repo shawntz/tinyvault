@@ -53,8 +53,8 @@ USE_CUSTOM_DOMAIN=$REPLY
 
 if [[ $USE_CUSTOM_DOMAIN =~ ^[Yy]$ ]]; then
     read -p "Enter your root domain (e.g., acme.com): " ROOT_DOMAIN
-    read -p "Enter subdomain [secure]: " SUBDOMAIN
-    SUBDOMAIN=${SUBDOMAIN:-secure}
+    read -p "Enter subdomain [cse]: " SUBDOMAIN
+    SUBDOMAIN=${SUBDOMAIN:-cse}
     CUSTOM_DOMAIN="${SUBDOMAIN}.${ROOT_DOMAIN}"
     echo "Custom domain: $CUSTOM_DOMAIN"
 fi
