@@ -29,8 +29,7 @@ def sanitize_for_log(value):
     # Remove dangerous Unicode characters: line separator, paragraph separator, general control chars.
     sanitized = ''.join(
         ch for ch in sanitized
-        if unicodedata.category(ch)[0] not in ('C')  # C = Other (includes controls)
-        and ch not in ('\u2028', '\u2029')
+        if unicodedata.category(ch) not in ('Cc', 'Cf', 'Cs', 'Co', 'Cn', 'Zl', 'Zp')
     )
     sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
     # Optionally limit length to 256 chars to prevent log flooding
