@@ -227,7 +227,6 @@ def wrap_key():
             return jsonify({'error': 'Unauthorized'}), 401
 
         # Check authorization (optional - can be used for access control)
-        authorization_token = data.get('authorization', '')
         # The authorization token can be used to determine if this specific user
         # should have access to this specific resource, but for single-user setup
         # we just verify the user is authenticated
