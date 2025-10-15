@@ -438,6 +438,8 @@ def privileged_unwrap():
             user_email = user_info['user_email']
             if isinstance(user_email, str):
                 user_email = user_email.replace('\r', '').replace('\n', '')
+            else:
+                user_email = str(user_email).replace('\r', '').replace('\n', '')
             logger.info(f"Privileged unwrap - Authenticated user: {user_email}")
         except Exception as e:
             logger.error(f"Privileged unwrap authentication failed: {str(e)}")
