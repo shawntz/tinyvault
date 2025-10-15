@@ -48,9 +48,10 @@ CORS(app,
 @app.before_request
 def log_incoming_request():
     try:
+        sanitized_method = sanitize_for_log(request.method)
         sanitized_path = sanitize_for_log(request.path)
         sanitized_origin = sanitize_for_log(request.headers.get('Origin', ''))
-        logger.info(f">>> {request.method} {sanitized_path} Origin={sanitized_origin}")
+        logger.info(f">>> {sanitized_method} {sanitized_path} Origin={sanitized_origin}")
     except Exception:
         pass
 
