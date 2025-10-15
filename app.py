@@ -16,6 +16,12 @@ from auth import verify_service_account, verify_okta_token, verify_workspace_tok
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def sanitize_for_log(value):
+    if isinstance(value, str):
+        # Remove newlines, carriage returns, and tabs to prevent log injection
+        return re.sub(r'[\r\n\t]', '', value)
+    return value
+
 app = Flask(__name__)
 
 # Enable CORS for Google Workspace CSE
@@ -43,9 +49,12 @@ CORS(app,
 @app.before_request
 def log_incoming_request():
     try:
-        logger.info(f">>> {request.method} {request.path} Origin={request.headers.get('Origin', '')}")
-    except Exception as e:
-        logger.error(f"Failed to log incoming request: {e}")
+        sanitized_method = sanitize_for_log(request.method)
+        sanitized_path = sanitize_for_log(request.path)
+        sanitized_origin = sanitize_for_log(request.headers.get('Origin', ''))
+        logger.info(f">>> {sanitized_method} {sanitized_path} Origin={sanitized_origin}")
+    except Exception:
+        pass
 
 # Attach CORS headers to all responses when appropriate
 @app.after_request
