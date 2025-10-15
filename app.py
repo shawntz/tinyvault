@@ -405,7 +405,7 @@ def privileged_unwrap():
         sanitized_acr_headers = acr_headers.replace('\r', '').replace('\n', '')
         logger.info(f"Access-Control-Request-Headers: {sanitized_acr_headers}")
         response = jsonify({})
-        origin = request.headers.get('Origin', '')
+        # origin already fetched above; reuse it here
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
