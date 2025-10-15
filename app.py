@@ -301,7 +301,7 @@ def unwrap_key():
         sanitized_acrh = acrh.replace('\r\n', '').replace('\r', '').replace('\n', '')
         logger.info(f"Access-Control-Request-Headers: {sanitized_acrh}")
         response = jsonify({})
-        origin = request.headers.get('Origin', '')
+        # origin already assigned above; reuse it
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
