@@ -297,7 +297,9 @@ def unwrap_key():
         origin = request.headers.get('Origin', '')
         sanitized_origin = origin.replace('\r\n', '').replace('\r', '').replace('\n', '')
         logger.info(f"Origin: {sanitized_origin}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        acrh = request.headers.get('Access-Control-Request-Headers', '')
+        sanitized_acrh = acrh.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {sanitized_acrh}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
