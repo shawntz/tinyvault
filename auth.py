@@ -98,10 +98,17 @@ def verify_okta_token(token, issuer=None, audience=None, client_id=None):
     try:
         # Get configuration from environment if not provided
         if not issuer:
-            okta_domain = os.environ.get('OKTA_DOMAIN', '')
-            if not okta_domain:
-                raise Exception("OKTA_DOMAIN environment variable not set")
-            issuer = f"https://{okta_domain}/oauth2/default"
+            # Derive issuer from IDP_DISCOVERY_URI
+            discovery_uri = os.environ.get('IDP_DISCOVERY_URI', '')
+            if discovery_uri:
+                # Remove /.well-known/openid-configuration to get issuer
+                issuer = discovery_uri.replace('/.well-known/openid-configuration', '')
+            else:
+                # Fallback to OKTA_DOMAIN with default auth server
+                okta_domain = os.environ.get('OKTA_DOMAIN', '')
+                if not okta_domain:
+                    raise Exception("OKTA_DOMAIN or IDP_DISCOVERY_URI environment variable not set")
+                issuer = f"https://{okta_domain}/oauth2/default"
 
         if not audience:
             audience = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
@@ -110,7 +117,20 @@ def verify_okta_token(token, issuer=None, audience=None, client_id=None):
             client_id = os.environ.get('IDP_CLIENT_ID', '')
 
         # Get JWKS from Okta to verify token signature
-        jwks_uri = f"{issuer}/v1/keys"
+        # For org auth servers: https://domain/oauth2/v1/keys
+        # For custom auth servers: https://domain/oauth2/{name}/v1/keys
+        if '/oauth2/' in issuer and issuer.endswith('/oauth2/default'):
+            # Custom authorization server
+            jwks_uri = f"{issuer}/v1/keys"
+        elif '/oauth2/' not in issuer:
+            # Org authorization server (root level)
+            jwks_uri = f"{issuer}/oauth2/v1/keys"
+        else:
+            # Generic fallback
+            jwks_uri = f"{issuer}/v1/keys"
+
+        logger.info(f"Using issuer: {issuer}")
+        logger.info(f"Fetching JWKS from: {jwks_uri}")
         jwks_client = PyJWKClient(jwks_uri)
 
         # Get signing key from token header
@@ -124,6 +144,8 @@ def verify_okta_token(token, issuer=None, audience=None, client_id=None):
             issuer=issuer,
             options={"verify_aud": False}  # CSE tokens might not have standard audience
         )
+
+        logger.info(f"Token issuer claim: {decoded_token.get('iss', 'N/A')}")
 
         # Extract user information
         user_email = decoded_token.get('email', decoded_token.get('sub', ''))
