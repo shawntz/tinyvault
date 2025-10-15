@@ -89,9 +89,15 @@ def health():
 def status():
     """Status endpoint for Google Workspace CSE discovery"""
     return jsonify({
-        'status': 'ok',
-        'service': 'TinyVault KACLS',
-        'ready': True
+        'server_type': 'KACLS',
+        'vendor_id': 'TinyVault',
+        'version': '1.0',
+        'name': 'TinyVault KACLS',
+        'operations_supported': [
+            'wrap',
+            'unwrap',
+            'privilegedunwrap'
+        ]
     }), 200
 
 
