@@ -254,7 +254,7 @@ def wrap_key():
 
         # Explicitly set CORS headers to ensure they're present
         origin = request.headers.get('Origin', '')
-        origin_hostname = urlparse(origin).hostname if origin else ''
+        origin_hostname = urlparse(origin).hostname or '' if origin else ''
         # Allow CORS only for google.com and its subdomains
         if origin_hostname and (origin_hostname == 'google.com' or origin_hostname.endswith('.google.com')):
             response.headers['Access-Control-Allow-Origin'] = origin
