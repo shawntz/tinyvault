@@ -295,7 +295,9 @@ def unwrap_key():
     if request.method == 'OPTIONS':
         logger.info("=== UNWRAP OPTIONS (preflight) ===")
         logger.info(f"Origin: {request.headers.get('Origin', '')}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        acrh = request.headers.get('Access-Control-Request-Headers', '')
+        sanitized_acrh = acrh.replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {sanitized_acrh}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
