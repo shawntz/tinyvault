@@ -205,6 +205,7 @@ def wrap_key():
     try:
         data = request.get_json()
         if data:
+            # Sanitize keys to prevent log injection (CR/LF). See Security Alert: LOG-INJECTION-CRLF.
             safe_keys = [str(key).replace('\r', '').replace('\n', '') for key in data.keys()]
             logger.info("Request body keys: %s", safe_keys)
         else:
