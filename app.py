@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 def sanitize_for_log(value):
     if isinstance(value, str):
-        # Remove newlines and carriage returns to prevent log injection
-        return value.replace('\r', '').replace('\n', '')
+        # Remove newlines, carriage returns, and tabs to prevent log injection
+        return re.sub(r'[\r\n\t]', '', value)
     return value
 
 app = Flask(__name__)
