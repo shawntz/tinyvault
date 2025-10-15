@@ -6,7 +6,6 @@ import os
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import re
 from functools import wraps
 from kms_service import KMSService
 from auth import verify_service_account, verify_okta_token, verify_workspace_token
