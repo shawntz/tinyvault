@@ -1,7 +1,11 @@
 """
 Authentication module for verifying Google Workspace service account tokens
+and Okta identity provider tokens
 """
 import logging
+import os
+import jwt
+from jwt import PyJWKClient
 from google.oauth2 import id_token
 from google.auth.transport import requests
 
@@ -73,3 +77,71 @@ def verify_workspace_token(token, expected_audience=None):
     except Exception as e:
         logger.error(f"Workspace token verification failed: {str(e)}")
         raise Exception(f"Invalid Workspace token: {str(e)}")
+
+
+def verify_okta_token(token, issuer=None, audience=None, client_id=None):
+    """
+    Verify an Okta JWT token for Google Workspace CSE
+
+    Args:
+        token: JWT token from the 'authentication' field
+        issuer: Okta issuer URL (e.g., https://acme.okta.com/oauth2/default)
+        audience: Expected audience claim
+        client_id: Okta client ID
+
+    Returns:
+        Dict with user_email and other claims
+
+    Raises:
+        Exception if token is invalid
+    """
+    try:
+        # Get configuration from environment if not provided
+        if not issuer:
+            okta_domain = os.environ.get('OKTA_DOMAIN', '')
+            if not okta_domain:
+                raise Exception("OKTA_DOMAIN environment variable not set")
+            issuer = f"https://{okta_domain}/oauth2/default"
+
+        if not audience:
+            audience = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
+
+        if not client_id:
+            client_id = os.environ.get('IDP_CLIENT_ID', '')
+
+        # Get JWKS from Okta to verify token signature
+        jwks_uri = f"{issuer}/v1/keys"
+        jwks_client = PyJWKClient(jwks_uri)
+
+        # Get signing key from token header
+        signing_key = jwks_client.get_signing_key_from_jwt(token)
+
+        # Verify and decode the token
+        decoded_token = jwt.decode(
+            token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=issuer,
+            options={"verify_aud": False}  # CSE tokens might not have standard audience
+        )
+
+        # Extract user information
+        user_email = decoded_token.get('email', decoded_token.get('sub', ''))
+
+        logger.info(f"Okta token verified for user: {user_email}")
+
+        return {
+            'user_email': user_email,
+            'subject': decoded_token.get('sub', ''),
+            'claims': decoded_token
+        }
+
+    except jwt.ExpiredSignatureError:
+        logger.error("Okta token has expired")
+        raise Exception("Token has expired")
+    except jwt.InvalidTokenError as e:
+        logger.error(f"Okta token validation failed: {str(e)}")
+        raise Exception(f"Invalid Okta token: {str(e)}")
+    except Exception as e:
+        logger.error(f"Okta token verification error: {str(e)}")
+        raise Exception(f"Okta authentication failed: {str(e)}")

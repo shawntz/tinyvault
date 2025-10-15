@@ -38,6 +38,13 @@ IDP_DISCOVERY_URI=${IDP_DISCOVERY_URI:-https://accounts.google.com/.well-known/o
 read -p "Enter IdP Audience [cse-authorization]: " IDP_AUDIENCE
 IDP_AUDIENCE=${IDP_AUDIENCE:-cse-authorization}
 
+# Okta-specific configuration (only needed for Okta IdP)
+if [[ $IDP_NAME == "Okta" ]] || [[ $IDP_NAME == "okta" ]]; then
+    read -p "Enter Okta domain (e.g., acme.okta.com): " OKTA_DOMAIN
+else
+    OKTA_DOMAIN=""
+fi
+
 # Custom domain configuration
 echo ""
 read -p "Do you want to use a custom domain? (y/n): " -n 1 -r
@@ -88,7 +95,7 @@ gcloud run deploy $SERVICE_NAME \
     --platform managed \
     --region $REGION \
     --allow-unauthenticated \
-    --set-env-vars "VERSION=$DOCKER_TAG,GCP_PROJECT_ID=$PROJECT_ID,KMS_LOCATION=$KMS_LOCATION,KMS_KEYRING=cse-keyring,KMS_KEY=cse-key,ALLOWED_EMAILS=$USER_EMAIL,IDP_NAME=$IDP_NAME,IDP_CLIENT_ID=$IDP_CLIENT_ID,IDP_DISCOVERY_URI=$IDP_DISCOVERY_URI,IDP_AUDIENCE=$IDP_AUDIENCE" \
+    --set-env-vars "VERSION=$DOCKER_TAG,GCP_PROJECT_ID=$PROJECT_ID,KMS_LOCATION=$KMS_LOCATION,KMS_KEYRING=cse-keyring,KMS_KEY=cse-key,ALLOWED_EMAILS=$USER_EMAIL,IDP_NAME=$IDP_NAME,IDP_CLIENT_ID=$IDP_CLIENT_ID,IDP_DISCOVERY_URI=$IDP_DISCOVERY_URI,IDP_AUDIENCE=$IDP_AUDIENCE,OKTA_DOMAIN=$OKTA_DOMAIN" \
     --memory 512Mi \
     --cpu 1 \
     --max-instances 3 \

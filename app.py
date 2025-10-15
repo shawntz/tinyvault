@@ -9,7 +9,7 @@ from flask_cors import CORS
 import re
 from functools import wraps
 from kms_service import KMSService
-from auth import verify_service_account
+from auth import verify_service_account, verify_okta_token
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -153,41 +153,35 @@ def wrap_key():
     logger.info(f"=== WRAP REQUEST ===")
     logger.info(f"Headers: {dict(request.headers)}")
 
-    # TEMPORARILY SKIP AUTH FOR TESTING
-    # TODO: Implement proper Google Workspace CSE authorization token validation
-    logger.warning("⚠️ AUTHENTICATION TEMPORARILY DISABLED FOR TESTING")
-
     try:
         data = request.get_json()
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
 
-        # Log the structure of each field (mask sensitive data)
-        if data:
-            for key in data.keys():
-                if key == 'key':
-                    logger.info(f"  {key}: <masked, length={len(data[key])} chars>")
-                elif key == 'authentication':
-                    auth_data = data[key]
-                    if isinstance(auth_data, str):
-                        logger.info(f"  {key}: <JWT token, length={len(auth_data)} chars>")
-                    else:
-                        logger.info(f"  {key}: {type(auth_data).__name__} = {auth_data}")
-                elif key == 'authorization':
-                    auth_data = data[key]
-                    if isinstance(auth_data, str):
-                        logger.info(f"  {key}: <string, length={len(auth_data)} chars>")
-                    else:
-                        logger.info(f"  {key}: {type(auth_data).__name__} = {auth_data}")
-                else:
-                    logger.info(f"  {key}: {data[key]}")
-
         if not data or 'key' not in data:
             return jsonify({'error': 'Missing key in request'}), 400
 
-        plaintext_dek = data['key']
+        # Validate authentication token (from Okta IdP)
+        authentication_token = data.get('authentication', '')
+        if not authentication_token:
+            logger.warning("No authentication token provided")
+            return jsonify({'error': 'Authentication required'}), 401
 
-        # Google sends authorization as a STRING (JWT token), not a dict
-        # Skip authorization check during debugging
+        try:
+            # Verify the Okta JWT token
+            user_info = verify_okta_token(authentication_token)
+            user_email = user_info['user_email']
+            logger.info(f"Authenticated user: {user_email}")
+        except Exception as e:
+            logger.error(f"Authentication failed: {str(e)}")
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        # Check authorization (optional - can be used for access control)
+        authorization_token = data.get('authorization', '')
+        # The authorization token can be used to determine if this specific user
+        # should have access to this specific resource, but for single-user setup
+        # we just verify the user is authenticated
+
+        plaintext_dek = data['key']
 
         # Wrap the DEK using KMS
         wrapped_key = kms_service.wrap(plaintext_dek)
@@ -226,41 +220,34 @@ def unwrap_key():
     logger.info(f"=== UNWRAP REQUEST ===")
     logger.info(f"Headers: {dict(request.headers)}")
 
-    # TEMPORARILY SKIP AUTH FOR TESTING
-    # TODO: Implement proper Google Workspace CSE authorization token validation
-    logger.warning("⚠️ AUTHENTICATION TEMPORARILY DISABLED FOR TESTING")
-
     try:
         data = request.get_json()
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
 
-        # Log the structure of each field (mask sensitive data)
-        if data:
-            for key in data.keys():
-                if key == 'wrappedKey':
-                    logger.info(f"  {key}: <masked, length={len(data[key])} chars>")
-                elif key == 'authentication':
-                    auth_data = data[key]
-                    if isinstance(auth_data, str):
-                        logger.info(f"  {key}: <JWT token, length={len(auth_data)} chars>")
-                    else:
-                        logger.info(f"  {key}: {type(auth_data).__name__} = {auth_data}")
-                elif key == 'authorization':
-                    auth_data = data[key]
-                    if isinstance(auth_data, str):
-                        logger.info(f"  {key}: <string, length={len(auth_data)} chars>")
-                    else:
-                        logger.info(f"  {key}: {type(auth_data).__name__} = {auth_data}")
-                else:
-                    logger.info(f"  {key}: {data[key]}")
-
         if not data or 'wrappedKey' not in data:
             return jsonify({'error': 'Missing wrappedKey in request'}), 400
 
-        wrapped_key = data['wrappedKey']
+        # Validate authentication token (from Okta IdP)
+        authentication_token = data.get('authentication', '')
+        if not authentication_token:
+            logger.warning("No authentication token provided")
+            return jsonify({'error': 'Authentication required'}), 401
 
-        # Google sends authorization as a STRING (JWT token), not a dict
-        # Skip authorization check during debugging
+        try:
+            # Verify the Okta JWT token
+            user_info = verify_okta_token(authentication_token)
+            user_email = user_info['user_email']
+            logger.info(f"Authenticated user: {user_email}")
+        except Exception as e:
+            logger.error(f"Authentication failed: {str(e)}")
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        # Check authorization (optional - can be used for access control)
+        authorization_token = data.get('authorization', '')
+        # The authorization token can be used to determine if this specific user
+        # should have access to this specific resource
+
+        wrapped_key = data['wrappedKey']
 
         # Unwrap the DEK using KMS
         plaintext_key = kms_service.unwrap(wrapped_key)
@@ -288,15 +275,26 @@ def privileged_unwrap():
     # Log request for debugging
     logger.info(f"=== PRIVILEGED UNWRAP REQUEST ===")
 
-    # TEMPORARILY SKIP AUTH FOR TESTING
-    # TODO: Implement proper Google Workspace CSE authorization token validation
-    logger.warning("⚠️ AUTHENTICATION TEMPORARILY DISABLED FOR TESTING")
-
     try:
         data = request.get_json()
 
         if not data or 'wrappedKey' not in data:
             return jsonify({'error': 'Missing wrappedKey in request'}), 400
+
+        # Validate authentication token (from Okta IdP)
+        authentication_token = data.get('authentication', '')
+        if not authentication_token:
+            logger.warning("No authentication token provided for privileged unwrap")
+            return jsonify({'error': 'Authentication required'}), 401
+
+        try:
+            # Verify the Okta JWT token
+            user_info = verify_okta_token(authentication_token)
+            user_email = user_info['user_email']
+            logger.info(f"Privileged unwrap - Authenticated user: {user_email}")
+        except Exception as e:
+            logger.error(f"Privileged unwrap authentication failed: {str(e)}")
+            return jsonify({'error': 'Unauthorized'}), 401
 
         wrapped_key = data['wrappedKey']
         reason = data.get('reason', 'Admin access')
@@ -304,7 +302,7 @@ def privileged_unwrap():
         if isinstance(reason, str):
             reason = reason.replace('\r', '').replace('\n', '')
 
-        logger.warning(f"Privileged unwrap requested. Reason: {reason}")
+        logger.warning(f"Privileged unwrap requested by {user_email}. Reason: {reason}")
 
         # For single user setup, privileged unwrap just uses same logic
         plaintext_key = kms_service.unwrap(wrapped_key)
