@@ -207,6 +207,11 @@ def wrap_key():
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
         if data:
             # Sanitize 'authorization' user input before logging to avoid log injection
+            authorization = data.get('authorization', 'None')
+            if not isinstance(authorization, str):
+                authorization = str(authorization)
+            safe_auth = authorization.replace('\r', '').replace('\n', '')
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {safe_auth}, 'key': '[REDACTED]'}}")
             authorization = data.get('authorization', None)
             if isinstance(authorization, dict):
                 # Log only the keys of the authorization dict to avoid sensitive data
