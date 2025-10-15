@@ -469,8 +469,12 @@ def privileged_unwrap():
     # Handle CORS preflight
     if request.method == 'OPTIONS':
         logger.info("=== PRIVILEGED UNWRAP OPTIONS (preflight) ===")
-        logger.info(f"Origin: {request.headers.get('Origin', '')}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        origin_val = request.headers.get('Origin', '')
+        origin_val = origin_val.replace('\r', '').replace('\n', '')
+        logger.info(f"Origin: {origin_val}")
+        acrh_val = request.headers.get('Access-Control-Request-Headers', '')
+        acrh_val = acrh_val.translate({ord('\r'): None, ord('\n'): None})
+        logger.info(f"Access-Control-Request-Headers: {acrh_val}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         # Only allow CORS from google.com or its subdomains
