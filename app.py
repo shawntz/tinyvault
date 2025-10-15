@@ -192,9 +192,11 @@ def wrap_key():
         # Wrap the DEK using KMS
         wrapped_key = kms_service.wrap(plaintext_dek)
 
-        return jsonify({
-            'wrappedKey': wrapped_key
-        }), 200
+        response_data = {'wrappedKey': wrapped_key}
+        logger.info(f"Returning wrap response: wrappedKey length={len(wrapped_key)} chars")
+        logger.info(f"Response JSON: {response_data}")
+
+        return jsonify(response_data), 200
 
     except Exception as e:
         logger.error(f"Wrap operation failed: {str(e)}")
