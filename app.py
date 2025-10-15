@@ -353,7 +353,6 @@ def unwrap_key():
                     expected_aud = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
                     ws_info = verify_workspace_token(authorization_token, expected_audience=expected_aud)
                     user_email = ws_info.get('user_email', '')
-                    authenticated = True
                     logger.info(f"Authenticated via Google authorization token: {user_email}")
                 except Exception as e:
                     logger.error(f"Google authorization token validation failed: {str(e)}")
