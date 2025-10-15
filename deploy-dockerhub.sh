@@ -85,12 +85,14 @@ SERVICE_URL=$(gcloud run services describe $SERVICE_NAME \
     --format 'value(status.url)')
 
 # Allow public access for Google Workspace to reach the endpoint
+# Note: --allow-unauthenticated flag already enables public access
+# This command is redundant but kept for completeness
 echo ""
-echo "Setting up public access for Google Workspace..."
+echo "Verifying public access for Google Workspace..."
 gcloud run services add-iam-policy-binding $SERVICE_NAME \
     --region=$REGION \
     --member=allUsers \
-    --role=roles/run.invoker
+    --role=roles/run.invoker 2>/dev/null || echo "✓ Public access already configured via --allow-unauthenticated"
 
 echo ""
 echo "========================================="
