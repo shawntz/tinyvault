@@ -152,8 +152,11 @@ def wrap_key():
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            # Echo requested headers to satisfy browser CORS checks
+            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+            response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
             response.headers['Access-Control-Max-Age'] = '3600'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
         return response, 200
 
     # Log request for debugging
@@ -210,8 +213,10 @@ def wrap_key():
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+            response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
             response.headers['Access-Control-Max-Age'] = '3600'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
 
         logger.info(f"Wrap response headers: {dict(response.headers)}")
         logger.info(f"=== WRAP COMPLETE - waiting for unwrap request ===")
@@ -248,8 +253,10 @@ def unwrap_key():
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+            response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
             response.headers['Access-Control-Max-Age'] = '3600'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
         return response, 200
 
     # Log request for debugging
@@ -300,8 +307,10 @@ def unwrap_key():
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+            response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
             response.headers['Access-Control-Max-Age'] = '3600'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
 
         logger.info(f"Unwrap response headers: {dict(response.headers)}")
         return response
