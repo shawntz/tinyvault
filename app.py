@@ -204,7 +204,11 @@ def wrap_key():
 
     try:
         data = request.get_json()
-        logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        if data:
+            safe_keys = [str(key).replace('\r', '').replace('\n', '') for key in data.keys()]
+            logger.info(f"Request body keys: {safe_keys}")
+        else:
+            logger.info("Request body keys: None")
         if data:
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'key': '[REDACTED]'}}")
 
