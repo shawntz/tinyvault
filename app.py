@@ -5,6 +5,7 @@ Implements the Key Access Control List Service for Google Workspace encryption
 import os
 import logging
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 import re
 from functools import wraps
 from kms_service import KMSService
@@ -15,6 +16,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
+
+# Enable CORS for Google Workspace CSE
+# Google requires CORS to access from https://client-side-encryption.google.com
+CORS(app, origins=[
+    "https://client-side-encryption.google.com",
+    "https://*.google.com",
+    "https://mail.google.com",
+    "https://drive.google.com",
+    "https://docs.google.com"
+], supports_credentials=True)
 
 # Initialize KMS service
 kms_service = KMSService(
