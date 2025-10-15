@@ -18,8 +18,10 @@ logger = logging.getLogger(__name__)
 
 def sanitize_for_log(value):
     if isinstance(value, str):
-        # Remove newlines, carriage returns, and tabs to prevent log injection
-        return re.sub(r'[\r\n\t]', '', value)
+        # Remove newlines, carriage returns, tabs, quotes, and pipes to prevent log injection and confusion
+        sanitized = re.sub(r'[\r\n\t]', '', value)
+        sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
+        return sanitized
     return value
 
 app = Flask(__name__)
@@ -52,7 +54,7 @@ def log_incoming_request():
         sanitized_method = sanitize_for_log(request.method)
         sanitized_path = sanitize_for_log(request.path)
         sanitized_origin = sanitize_for_log(request.headers.get('Origin', ''))
-        logger.info(f">>> {sanitized_method} {sanitized_path} Origin={sanitized_origin}")
+        logger.info(f">>> {sanitized_method} \"{sanitized_path}\" Origin=\"{sanitized_origin}\"")
     except Exception:
         pass
 
