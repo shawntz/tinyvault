@@ -184,6 +184,12 @@ def wrap_key():
     # Handle CORS preflight
     if request.method == 'OPTIONS':
         logger.info("=== WRAP OPTIONS (preflight) ===")
+        origin_header = request.headers.get('Origin', '')
+        safe_origin_header = origin_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        logger.info(f"Origin: {safe_origin_header}")
+        acrh_header = request.headers.get('Access-Control-Request-Headers', '')
+        safe_acrh_header = acrh_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {safe_acrh_header}")
         sanitized_origin = re.sub(r'[\r\n]+', '', request.headers.get('Origin', ''))
         logger.info(f"Origin: {sanitized_origin}")
         # Remove all non-printable/control characters to prevent log injection
