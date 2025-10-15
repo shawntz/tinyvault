@@ -407,7 +407,7 @@ def privileged_unwrap():
         try:
             parsed = urlparse(origin)
             host = parsed.hostname
-        except Exception:
+        except ValueError:
             host = None
         if host == "google.com" or (host and host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
