@@ -193,8 +193,7 @@ def wrap_key():
         wrapped_key = kms_service.wrap(plaintext_dek)
 
         return jsonify({
-            'wrappedKey': wrapped_key,
-            'status': 'success'
+            'wrappedKey': wrapped_key
         }), 200
 
     except Exception as e:
@@ -265,8 +264,7 @@ def unwrap_key():
         plaintext_key = kms_service.unwrap(wrapped_key)
 
         return jsonify({
-            'key': plaintext_key,
-            'status': 'success'
+            'key': plaintext_key
         }), 200
 
     except Exception as e:
@@ -310,8 +308,7 @@ def privileged_unwrap():
         plaintext_key = kms_service.unwrap(wrapped_key)
 
         return jsonify({
-            'key': plaintext_key,
-            'status': 'success'
+            'key': plaintext_key
         }), 200
 
     except Exception as e:
