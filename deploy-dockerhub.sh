@@ -24,6 +24,8 @@ KMS_LOCATION=${KMS_LOCATION:-us-central1}
 read -p "Enter authorized email address: " USER_EMAIL
 read -p "Enter service name [cse-kacls]: " SERVICE_NAME
 SERVICE_NAME=${SERVICE_NAME:-cse-kacls}
+read -p "Enter Docker image tag [latest]: " DOCKER_TAG
+DOCKER_TAG=${DOCKER_TAG:-latest}
 
 # Custom domain configuration
 echo ""
@@ -46,7 +48,7 @@ echo "  Region: $REGION"
 echo "  Service Name: $SERVICE_NAME"
 echo "  KMS Location: $KMS_LOCATION"
 echo "  Authorized Email: $USER_EMAIL"
-echo "  Docker Image: shawnschwartz/tinyvault:latest"
+echo "  Docker Image: shawnschwartz/tinyvault:$DOCKER_TAG"
 if [[ $USE_CUSTOM_DOMAIN =~ ^[Yy]$ ]]; then
     echo "  Custom Domain: $CUSTOM_DOMAIN"
 fi
@@ -64,11 +66,11 @@ gcloud config set project $PROJECT_ID
 # Deploy to Cloud Run using pre-built Docker Hub image
 echo ""
 echo "Deploying to Cloud Run from Docker Hub..."
-echo "Image: shawnschwartz/tinyvault:latest"
+echo "Image: shawnschwartz/tinyvault:$DOCKER_TAG"
 echo ""
 
 gcloud run deploy $SERVICE_NAME \
-    --image shawnschwartz/tinyvault:latest \
+    --image shawnschwartz/tinyvault:$DOCKER_TAG \
     --platform managed \
     --region $REGION \
     --allow-unauthenticated \
