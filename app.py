@@ -300,7 +300,7 @@ def unwrap_key():
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         parsed = urlparse(origin)
-        host = parsed.hostname
+        host = (parsed.hostname or '').lower().rstrip('.')
         # Only allow origins that are google.com or subdomains of google.com
         if host and (host == "google.com" or host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
