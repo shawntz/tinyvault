@@ -309,7 +309,11 @@ def unwrap_key():
 
     # Log request for debugging
     logger.info(f"=== UNWRAP REQUEST ===")
-    logger.info(f"Headers: {dict(request.headers)}")
+    sanitized_headers = { 
+        k.replace('\r', '').replace('\n', ''): v.replace('\r', '').replace('\n', '') 
+        for k, v in dict(request.headers).items() 
+    }
+    logger.info(f"Headers: {sanitized_headers}")
     logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
 
     try:
