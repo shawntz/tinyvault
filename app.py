@@ -222,7 +222,22 @@ def wrap_key():
         else:
             logger.info("Request body keys: None")
         if data:
-            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'key': '[REDACTED]'}}")
+            # Sanitize 'authorization' user input before logging to avoid log injection
+            authorization = data.get('authorization', 'None')
+            if not isinstance(authorization, str):
+                authorization = str(authorization)
+            safe_auth = authorization.replace('\r', '').replace('\n', '')
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {safe_auth}, 'key': '[REDACTED]'}}")
+            authorization = data.get('authorization', None)
+            if isinstance(authorization, dict):
+                # Log only the keys of the authorization dict to avoid sensitive data
+                safe_auth = {k: '[REDACTED]' for k in authorization.keys()}
+            elif isinstance(authorization, str):
+                # Remove newlines and carriage returns to prevent log injection
+                safe_auth = authorization.replace('\r', '').replace('\n', '')
+            else:
+                safe_auth = str(authorization)
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {safe_auth}, 'key': '[REDACTED]'}}")
 
         if not data or 'key' not in data:
             return jsonify({'error': 'Missing key in request'}), 400
