@@ -138,7 +138,9 @@ def status():
         'operations_supported': [
             'wrap',
             'unwrap',
-            'privilegedunwrap'
+            'privilegedunwrap',
+            'keys:wrap',
+            'keys:unwrap'
         ]
     }), 200
 
@@ -163,6 +165,8 @@ def cse_configuration():
 
 @app.route('/wrap', methods=['POST', 'OPTIONS'])
 @app.route('/v1/wrap', methods=['POST', 'OPTIONS'])
+@app.route('/keys:wrap', methods=['POST', 'OPTIONS'])
+@app.route('/v1/keys:wrap', methods=['POST', 'OPTIONS'])
 def wrap_key():
     """
     Wrap a data encryption key (DEK) using the master key in KMS
@@ -233,7 +237,7 @@ def wrap_key():
         # Wrap the DEK using KMS
         wrapped_key = kms_service.wrap(plaintext_dek)
 
-        response_data = {'wrappedKey': wrapped_key}
+        response_data = {'wrappedKey': wrapped_key, 'status': 'success'}
         logger.info(f"Returning wrap response: wrappedKey length={len(wrapped_key)} chars")
         logger.info(f"Response JSON: {response_data}")
 
@@ -267,6 +271,8 @@ def wrap_key():
 
 @app.route('/unwrap', methods=['POST', 'OPTIONS'])
 @app.route('/v1/unwrap', methods=['POST', 'OPTIONS'])
+@app.route('/keys:unwrap', methods=['POST', 'OPTIONS'])
+@app.route('/v1/keys:unwrap', methods=['POST', 'OPTIONS'])
 def unwrap_key():
     """
     Unwrap a data encryption key (DEK) using the master key in KMS
@@ -357,7 +363,7 @@ def unwrap_key():
         wrapped_key = data['wrappedKey']
         plaintext_key = kms_service.unwrap(wrapped_key)
 
-        response = jsonify({'key': plaintext_key})
+        response = jsonify({'key': plaintext_key, 'status': 'success'})
         response.status_code = 200
         response.headers['Content-Type'] = 'application/json'
         response = add_cors_headers(response)
