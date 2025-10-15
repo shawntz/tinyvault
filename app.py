@@ -9,7 +9,7 @@ from flask_cors import CORS
 import re
 from functools import wraps
 from kms_service import KMSService
-from auth import verify_service_account, verify_okta_token
+from auth import verify_service_account, verify_okta_token, verify_workspace_token
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -71,6 +71,21 @@ def require_auth(f):
         return f(*args, **kwargs)
 
     return decorated_function
+
+
+def add_cors_headers(response):
+    """
+    Attach CORS headers for Google CSE callers, including on error responses.
+    """
+    origin = request.headers.get('Origin', '')
+    if 'google.com' in origin:
+        response.headers['Access-Control-Allow-Origin'] = origin
+        response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+        requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+        response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
+        response.headers['Access-Control-Max-Age'] = '3600'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
+    return response
 
 
 @app.route('/', methods=['GET'])
@@ -271,53 +286,68 @@ def unwrap_key():
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'wrappedKey': '[REDACTED]'}}")
 
         if not data or 'wrappedKey' not in data:
-            return jsonify({'error': 'Missing wrappedKey in request'}), 400
+            logger.warning("Missing wrappedKey in request body")
+            resp = jsonify({'error': 'Missing wrappedKey in request'})
+            resp.status_code = 400
+            resp.headers['Content-Type'] = 'application/json'
+            return add_cors_headers(resp)
 
-        # Validate authentication token (from Okta IdP)
+        # Validate authentication tokens: prefer Okta, fall back to Google authorization token
         authentication_token = data.get('authentication', '')
-        if not authentication_token:
-            logger.warning("No authentication token provided")
-            return jsonify({'error': 'Authentication required'}), 401
-
-        try:
-            # Verify the Okta JWT token
-            user_info = verify_okta_token(authentication_token)
-            user_email = user_info['user_email']
-            logger.info(f"Authenticated user: {user_email}")
-        except Exception as e:
-            logger.error(f"Authentication failed: {str(e)}")
-            return jsonify({'error': 'Unauthorized'}), 401
-
-        # Check authorization (optional - can be used for access control)
         authorization_token = data.get('authorization', '')
-        # The authorization token can be used to determine if this specific user
-        # should have access to this specific resource
 
+        user_email = ''
+        authenticated = False
+
+        if authentication_token:
+            try:
+                user_info = verify_okta_token(authentication_token)
+                user_email = user_info['user_email']
+                authenticated = True
+                logger.info(f"Authenticated via Okta: {user_email}")
+            except Exception as e:
+                logger.warning(f"Okta authentication failed, will attempt Google authorization fallback: {str(e)}")
+        else:
+            logger.warning("No Okta authentication token provided; attempting Google authorization fallback")
+
+        if not authenticated:
+            if authorization_token:
+                try:
+                    expected_aud = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
+                    ws_info = verify_workspace_token(authorization_token, expected_audience=expected_aud)
+                    user_email = ws_info.get('user_email', '')
+                    authenticated = True
+                    logger.info(f"Authenticated via Google authorization token: {user_email}")
+                except Exception as e:
+                    logger.error(f"Google authorization token validation failed: {str(e)}")
+                    resp = jsonify({'error': 'Unauthorized'})
+                    resp.status_code = 401
+                    resp.headers['Content-Type'] = 'application/json'
+                    return add_cors_headers(resp)
+            else:
+                logger.error("Neither Okta authentication nor Google authorization token provided")
+                resp = jsonify({'error': 'Authentication required'})
+                resp.status_code = 401
+                resp.headers['Content-Type'] = 'application/json'
+                return add_cors_headers(resp)
+
+        # Proceed with unwrap
         wrapped_key = data['wrappedKey']
-
-        # Unwrap the DEK using KMS
         plaintext_key = kms_service.unwrap(wrapped_key)
 
         response = jsonify({'key': plaintext_key})
         response.status_code = 200
         response.headers['Content-Type'] = 'application/json'
-
-        # Explicitly set CORS headers
-        origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
-            response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
-            response.headers['Access-Control-Max-Age'] = '3600'
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-
+        response = add_cors_headers(response)
         logger.info(f"Unwrap response headers: {dict(response.headers)}")
         return response
 
     except Exception as e:
-        logger.error(f"Unwrap operation failed: {str(e)}")
-        return jsonify({'error': 'An internal error has occurred.'}), 500
+        logger.error(f"Unwrap operation failed: {str(e)}", exc_info=True)
+        resp = jsonify({'error': 'An internal error has occurred.'})
+        resp.status_code = 500
+        resp.headers['Content-Type'] = 'application/json'
+        return add_cors_headers(resp)
 
 
 @app.route('/privileged_unwrap', methods=['POST', 'OPTIONS'])
