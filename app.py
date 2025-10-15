@@ -399,7 +399,9 @@ def privileged_unwrap():
     if request.method == 'OPTIONS':
         logger.info("=== PRIVILEGED UNWRAP OPTIONS (preflight) ===")
         logger.info(f"Origin: {request.headers.get('Origin', '')}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        acrh_val = request.headers.get('Access-Control-Request-Headers', '')
+        acrh_val = acrh_val.replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {acrh_val}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
