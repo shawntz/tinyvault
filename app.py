@@ -295,7 +295,7 @@ def unwrap_key():
     if request.method == 'OPTIONS':
         logger.info("=== UNWRAP OPTIONS (preflight) ===")
         origin = request.headers.get('Origin', '')
-        sanitized_origin = origin.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        sanitized_origin = origin.replace('\r', '').replace('\n', '')
         logger.info(f"Origin: {sanitized_origin}")
         acrh = request.headers.get('Access-Control-Request-Headers', '')
         sanitized_acrh = acrh.replace('\r\n', '').replace('\r', '').replace('\n', '')
