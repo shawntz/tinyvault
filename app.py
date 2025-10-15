@@ -352,10 +352,9 @@ def unwrap_key():
         sanitized_acrh = acrh.replace('\r\n', '').replace('\r', '').replace('\n', '')
         logger.info(f"Access-Control-Request-Headers: {sanitized_acrh}")
         response = jsonify({})
-        # origin already assigned above; reuse it
-        if 'google.com' in origin:
-            parsed = urlparse(origin)
-            host = (parsed.hostname or '').lower().rstrip('.')
+        # origin already assigned above; sanitize and parse it
+        parsed = urlparse(origin)
+        host = (parsed.hostname or '').lower().rstrip('.')
         # Only allow origins that are google.com or subdomains of google.com, and require HTTPS scheme
         if parsed.scheme == 'https' and host and (host == "google.com" or host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
