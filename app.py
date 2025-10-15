@@ -405,7 +405,13 @@ def privileged_unwrap():
         logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
+        # Only allow CORS from google.com or its subdomains
+        try:
+            parsed = urlparse(origin)
+            host = parsed.hostname
+        except ValueError:
+            host = None
+        if host == "google.com" or (host and host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             requested_headers = request.headers.get('Access-Control-Request-Headers', '')
