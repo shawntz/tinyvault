@@ -186,7 +186,9 @@ def wrap_key():
         origin_header = request.headers.get('Origin', '')
         safe_origin_header = origin_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
         logger.info(f"Origin: {safe_origin_header}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        acrh_header = request.headers.get('Access-Control-Request-Headers', '')
+        safe_acrh_header = acrh_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {safe_acrh_header}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
