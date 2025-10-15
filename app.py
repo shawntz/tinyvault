@@ -147,7 +147,14 @@ def wrap_key():
     """
     # Handle CORS preflight
     if request.method == 'OPTIONS':
-        return jsonify({}), 200
+        response = jsonify({})
+        origin = request.headers.get('Origin', '')
+        if 'google.com' in origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Max-Age'] = '3600'
+        return response, 200
 
     # Log request for debugging
     logger.info(f"=== WRAP REQUEST ===")
@@ -198,7 +205,16 @@ def wrap_key():
         response.status_code = 200
         response.headers['Content-Type'] = 'application/json'
 
+        # Explicitly set CORS headers to ensure they're present
+        origin = request.headers.get('Origin', '')
+        if 'google.com' in origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Max-Age'] = '3600'
+
         logger.info(f"Wrap response headers: {dict(response.headers)}")
+        logger.info(f"=== WRAP COMPLETE - waiting for unwrap request ===")
 
         return response
 
@@ -227,15 +243,25 @@ def unwrap_key():
     """
     # Handle CORS preflight
     if request.method == 'OPTIONS':
-        return jsonify({}), 200
+        response = jsonify({})
+        origin = request.headers.get('Origin', '')
+        if 'google.com' in origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Max-Age'] = '3600'
+        return response, 200
 
     # Log request for debugging
     logger.info(f"=== UNWRAP REQUEST ===")
     logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
 
     try:
         data = request.get_json()
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        if data:
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'wrappedKey': '[REDACTED]'}}")
 
         if not data or 'wrappedKey' not in data:
             return jsonify({'error': 'Missing wrappedKey in request'}), 400
@@ -265,9 +291,20 @@ def unwrap_key():
         # Unwrap the DEK using KMS
         plaintext_key = kms_service.unwrap(wrapped_key)
 
-        return jsonify({
-            'key': plaintext_key
-        }), 200
+        response = jsonify({'key': plaintext_key})
+        response.status_code = 200
+        response.headers['Content-Type'] = 'application/json'
+
+        # Explicitly set CORS headers
+        origin = request.headers.get('Origin', '')
+        if 'google.com' in origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Max-Age'] = '3600'
+
+        logger.info(f"Unwrap response headers: {dict(response.headers)}")
+        return response
 
     except Exception as e:
         logger.error(f"Unwrap operation failed: {str(e)}")
@@ -283,7 +320,14 @@ def privileged_unwrap():
     """
     # Handle CORS preflight
     if request.method == 'OPTIONS':
-        return jsonify({}), 200
+        response = jsonify({})
+        origin = request.headers.get('Origin', '')
+        if 'google.com' in origin:
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            response.headers['Access-Control-Max-Age'] = '3600'
+        return response, 200
 
     # Log request for debugging
     logger.info(f"=== PRIVILEGED UNWRAP REQUEST ===")
