@@ -38,6 +38,22 @@ CORS(app,
          }
      })
 
+# Log all incoming requests early
+@app.before_request
+def log_incoming_request():
+    try:
+        logger.info(f">>> {request.method} {request.path} Origin={request.headers.get('Origin', '')}")
+    except Exception:
+        pass
+
+# Attach CORS headers to all responses when appropriate
+@app.after_request
+def apply_cors_on_response(response):
+    try:
+        return add_cors_headers(response)
+    except Exception:
+        return response
+
 # Initialize KMS service
 kms_service = KMSService(
     project_id=os.environ.get('GCP_PROJECT_ID'),
@@ -365,13 +381,18 @@ def privileged_unwrap():
     """
     # Handle CORS preflight
     if request.method == 'OPTIONS':
+        logger.info("=== PRIVILEGED UNWRAP OPTIONS (preflight) ===")
+        logger.info(f"Origin: {request.headers.get('Origin', '')}")
+        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
+            requested_headers = request.headers.get('Access-Control-Request-Headers', '')
+            response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
             response.headers['Access-Control-Max-Age'] = '3600'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
         return response, 200
 
     # Log request for debugging
@@ -381,13 +402,19 @@ def privileged_unwrap():
         data = request.get_json()
 
         if not data or 'wrappedKey' not in data:
-            return jsonify({'error': 'Missing wrappedKey in request'}), 400
+            resp = jsonify({'error': 'Missing wrappedKey in request'})
+            resp.status_code = 400
+            resp.headers['Content-Type'] = 'application/json'
+            return add_cors_headers(resp)
 
         # Validate authentication token (from Okta IdP)
         authentication_token = data.get('authentication', '')
         if not authentication_token:
             logger.warning("No authentication token provided for privileged unwrap")
-            return jsonify({'error': 'Authentication required'}), 401
+            resp = jsonify({'error': 'Authentication required'})
+            resp.status_code = 401
+            resp.headers['Content-Type'] = 'application/json'
+            return add_cors_headers(resp)
 
         try:
             # Verify the Okta JWT token
@@ -396,7 +423,10 @@ def privileged_unwrap():
             logger.info(f"Privileged unwrap - Authenticated user: {user_email}")
         except Exception as e:
             logger.error(f"Privileged unwrap authentication failed: {str(e)}")
-            return jsonify({'error': 'Unauthorized'}), 401
+            resp = jsonify({'error': 'Unauthorized'})
+            resp.status_code = 401
+            resp.headers['Content-Type'] = 'application/json'
+            return add_cors_headers(resp)
 
         wrapped_key = data['wrappedKey']
         reason = data.get('reason', 'Admin access')
@@ -414,8 +444,11 @@ def privileged_unwrap():
         }), 200
 
     except Exception as e:
-        logger.error(f"Privileged unwrap operation failed: {str(e)}")
-        return jsonify({'error': 'Privileged unwrap operation failed.'}), 500
+        logger.error(f"Privileged unwrap operation failed: {str(e)}", exc_info=True)
+        resp = jsonify({'error': 'Privileged unwrap operation failed.'})
+        resp.status_code = 500
+        resp.headers['Content-Type'] = 'application/json'
+        return add_cors_headers(resp)
 
 
 def is_authorized(user_email):
