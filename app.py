@@ -7,6 +7,7 @@ import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from functools import wraps
+from urllib.parse import urlparse
 from kms_service import KMSService
 from auth import verify_service_account, verify_okta_token, verify_workspace_token
 
@@ -93,7 +94,8 @@ def add_cors_headers(response):
     Attach CORS headers for Google CSE callers, including on error responses.
     """
     origin = request.headers.get('Origin', '')
-    if 'google.com' in origin:
+    hostname = urlparse(origin).hostname or None
+    if hostname and hostname.endswith('.google.com'):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
         requested_headers = request.headers.get('Access-Control-Request-Headers', '')
