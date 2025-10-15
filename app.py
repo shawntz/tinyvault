@@ -8,6 +8,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import re
 from functools import wraps
+from urllib.parse import urlparse
 from kms_service import KMSService
 from auth import verify_service_account, verify_okta_token, verify_workspace_token
 
@@ -298,7 +299,10 @@ def unwrap_key():
         logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
+        parsed = urlparse(origin)
+        host = parsed.hostname
+        # Only allow origins that are google.com or subdomains of google.com
+        if host and (host == "google.com" or host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             requested_headers = request.headers.get('Access-Control-Request-Headers', '')
