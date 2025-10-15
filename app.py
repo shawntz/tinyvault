@@ -199,7 +199,7 @@ def wrap_key():
 
     # Log request for debugging
     logger.info(f"=== WRAP REQUEST ===")
-    logger.info(f"Headers: {dict(request.headers)}")
+    sanitized_headers = {k: str(v).replace('\r\n', '').replace('\n', '').replace('\r', '') for k, v in request.headers.items()}
     logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
 
     try:
