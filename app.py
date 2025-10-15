@@ -315,9 +315,19 @@ def unwrap_key():
     try:
         data = request.get_json()
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        def sanitize_for_log(obj):
+            if isinstance(obj, dict):
+                return {k: sanitize_for_log(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize_for_log(v) for v in obj]
+            elif isinstance(obj, str):
+                # Remove CR and LF characters and any non-printable ascii control chars
+                return re.sub(r'[\r\n\x00-\x1F\x7F]', '', obj)
+            else:
+                return obj
         if data:
-            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'wrappedKey': '[REDACTED]'}}")
-
+            authorization_sanitized = sanitize_for_log(data.get('authorization', 'None'))
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {authorization_sanitized}, 'wrappedKey': '[REDACTED]'}}")
         # Accept both camelCase and snake_case for wrapped key field
         has_wrapped_camel = bool(data and 'wrappedKey' in data)
         has_wrapped_snake = bool(data and 'wrapped_key' in data)
