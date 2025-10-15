@@ -17,12 +17,16 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 def sanitize_for_log(value):
-    if isinstance(value, str):
-        # Remove newlines, carriage returns, tabs, quotes, and pipes to prevent log injection and confusion
-        sanitized = re.sub(r'[\r\n\t]', '', value)
-        sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
-        return sanitized
-    return value
+    # Only allow safe types for string conversion
+    if isinstance(value, (str, int, float, bool)):
+        value_str = str(value)
+    else:
+        value_str = "<non-primitive>"
+    # Remove all control characters (including newlines, carriage returns, tabs, etc.)
+    sanitized = re.sub(r'[\x00-\x1F\x7F]', '', value_str)
+    sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
+    # Optionally limit length to 256 chars to prevent log flooding
+    return sanitized[:256]
 
 app = Flask(__name__)
 
