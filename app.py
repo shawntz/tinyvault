@@ -237,7 +237,12 @@ def wrap_key():
         # Wrap the DEK using KMS
         wrapped_key = kms_service.wrap(plaintext_dek)
 
-        response_data = {'wrappedKey': wrapped_key, 'status': 'success'}
+        # Include both camelCase and snake_case for client compatibility
+        response_data = {
+            'wrappedKey': wrapped_key,
+            'wrapped_key': wrapped_key,
+            'status': 'success'
+        }
         logger.info(f"Returning wrap response: wrappedKey length={len(wrapped_key)} chars")
         logger.info(f"Response JSON: {response_data}")
 
