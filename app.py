@@ -304,6 +304,7 @@ def unwrap_key():
         # Only allow origins that are google.com or subdomains of google.com, and require HTTPS scheme
         if parsed.scheme == 'https' and host and (host == "google.com" or host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             requested_headers = request.headers.get('Access-Control-Request-Headers', '')
             response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
