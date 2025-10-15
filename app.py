@@ -323,7 +323,11 @@ def unwrap_key():
         has_wrapped_snake = bool(data and 'wrapped_key' in data)
 
         if not data or (not has_wrapped_camel and not has_wrapped_snake):
-            logger.warning(f"Missing wrapped key in request body. Keys present: {list(data.keys()) if data else 'None'}")
+            sanitized_keys = (
+                ', '.join([str(k).replace('\n', '').replace('\r', '') for k in data.keys()])
+                if data else 'None'
+            )
+            logger.warning(f"Missing wrapped key in request body. Keys present: {sanitized_keys}")
             resp = jsonify({'error': 'Missing wrappedKey/wrapped_key in request'})
             resp.status_code = 400
             resp.headers['Content-Type'] = 'application/json'
