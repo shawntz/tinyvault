@@ -113,7 +113,6 @@ def verify_okta_token(token, issuer=None, audience=None, client_id=None):
         if not audience:
 
         if not client_id:
-            client_id = os.environ.get('IDP_CLIENT_ID', '')
 
         # Get JWKS from Okta to verify token signature
         # For org auth servers: https://domain/oauth2/v1/keys
