@@ -314,7 +314,7 @@ def unwrap_key():
     logger.info(f"Headers: {safe_headers}")
     origin_val = request.headers.get('Origin', 'No origin header')
     origin_val = origin_val.replace('\r', '').replace('\n', '')
-    logger.info(f"Request origin: {origin_val}")
+    logger.info("Request origin: %s", origin_val)
 
     try:
         data = request.get_json()
