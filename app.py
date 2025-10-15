@@ -6,8 +6,8 @@ import os
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import re
 from functools import wraps
+from urllib.parse import urlparse
 from kms_service import KMSService
 from auth import verify_service_account, verify_okta_token, verify_workspace_token
 
@@ -43,8 +43,8 @@ CORS(app,
 def log_incoming_request():
     try:
         logger.info(f">>> {request.method} {request.path} Origin={request.headers.get('Origin', '')}")
-    except Exception:
-        pass
+    except Exception as e:
+        logger.error(f"Failed to log incoming request: {e}")
 
 # Attach CORS headers to all responses when appropriate
 @app.after_request
@@ -94,7 +94,8 @@ def add_cors_headers(response):
     Attach CORS headers for Google CSE callers, including on error responses.
     """
     origin = request.headers.get('Origin', '')
-    if 'google.com' in origin:
+    hostname = urlparse(origin).hostname or None
+    if hostname and hostname.endswith('.google.com'):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
         requested_headers = request.headers.get('Access-Control-Request-Headers', '')
@@ -187,7 +188,14 @@ def wrap_key():
         logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
+        host = ''
+        if origin:
+            parsed = urlparse(origin)
+            if parsed.hostname is None:
+                logger.warning(f"Malformed or missing hostname in Origin header: '{origin}'")
+            else:
+                host = parsed.hostname
+        if host == 'google.com' or host.endswith('.google.com'):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             # Echo requested headers to satisfy browser CORS checks
@@ -207,7 +215,12 @@ def wrap_key():
 
     try:
         data = request.get_json()
-        logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        if data:
+            # Sanitize keys to prevent log injection (CR/LF). See Security Alert: LOG-INJECTION-CRLF.
+            safe_keys = [str(key).replace('\r', '').replace('\n', '') for key in data.keys()]
+            logger.info("Request body keys: %s", safe_keys)
+        else:
+            logger.info("Request body keys: None")
         if data:
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'key': '[REDACTED]'}}")
 
@@ -230,7 +243,6 @@ def wrap_key():
             return jsonify({'error': 'Unauthorized'}), 401
 
         # Check authorization (optional - can be used for access control)
-        authorization_token = data.get('authorization', '')
         # The authorization token can be used to determine if this specific user
         # should have access to this specific resource, but for single-user setup
         # we just verify the user is authenticated
@@ -301,8 +313,12 @@ def unwrap_key():
         logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
+        parsed = urlparse(origin)
+        host = (parsed.hostname or '').lower().rstrip('.')
+        # Only allow origins that are google.com or subdomains of google.com, and require HTTPS scheme
+        if parsed.scheme == 'https' and host and (host == "google.com" or host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Vary'] = 'Origin'
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             requested_headers = request.headers.get('Access-Control-Request-Headers', '')
             response.headers['Access-Control-Allow-Headers'] = requested_headers or 'Content-Type, Authorization, X-Requested-With'
@@ -318,9 +334,19 @@ def unwrap_key():
     try:
         data = request.get_json()
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        def sanitize_for_log(obj):
+            if isinstance(obj, dict):
+                return {k: sanitize_for_log(v) for k, v in obj.items()}
+            elif isinstance(obj, list):
+                return [sanitize_for_log(v) for v in obj]
+            elif isinstance(obj, str):
+                # Remove CR and LF characters and any non-printable ascii control chars
+                return re.sub(r'[\r\n\x00-\x1F\x7F]', '', obj)
+            else:
+                return obj
         if data:
-            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'wrappedKey': '[REDACTED]'}}")
-
+            authorization_sanitized = sanitize_for_log(data.get('authorization', 'None'))
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {authorization_sanitized}, 'wrappedKey': '[REDACTED]'}}")
         # Accept both camelCase and snake_case for wrapped key field
         has_wrapped_camel = bool(data and 'wrappedKey' in data)
         has_wrapped_snake = bool(data and 'wrapped_key' in data)
@@ -356,7 +382,6 @@ def unwrap_key():
                     expected_aud = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
                     ws_info = verify_workspace_token(authorization_token, expected_audience=expected_aud)
                     user_email = ws_info.get('user_email', '')
-                    authenticated = True
                     logger.info(f"Authenticated via Google authorization token: {user_email}")
                 except Exception as e:
                     logger.error(f"Google authorization token validation failed: {str(e)}")
@@ -405,7 +430,13 @@ def privileged_unwrap():
         logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
+        # Only allow CORS from google.com or its subdomains
+        try:
+            parsed = urlparse(origin)
+            host = parsed.hostname
+        except ValueError:
+            host = None
+        if host == "google.com" or (host and host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             requested_headers = request.headers.get('Access-Control-Request-Headers', '')
@@ -439,6 +470,10 @@ def privileged_unwrap():
             # Verify the Okta JWT token
             user_info = verify_okta_token(authentication_token)
             user_email = user_info['user_email']
+            if isinstance(user_email, str):
+                user_email = user_email.replace('\r', '').replace('\n', '')
+            else:
+                user_email = str(user_email).replace('\r', '').replace('\n', '')
             logger.info(f"Privileged unwrap - Authenticated user: {user_email}")
         except Exception as e:
             logger.error(f"Privileged unwrap authentication failed: {str(e)}")
