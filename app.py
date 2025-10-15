@@ -95,20 +95,11 @@ def add_cors_headers(response):
     Attach CORS headers for Google CSE callers, including on error responses.
     """
     origin = request.headers.get('Origin', '')
-    allowed_google_domains = [
-        "admin.google.com",
-        "client-side-encryption.google.com",
-        "mail.google.com",
-        "drive.google.com",
-        "docs.google.com",
-        "calendar.google.com",
-        "meet.google.com"
-    ]
     try:
         hostname = urlparse(origin).hostname
     except Exception:
         hostname = None
-    if hostname and (hostname in allowed_google_domains or hostname.endswith('.google.com')):
+    if hostname and hostname.endswith('.google.com'):
         response.headers['Access-Control-Allow-Origin'] = origin
         response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
         requested_headers = request.headers.get('Access-Control-Request-Headers', '')
