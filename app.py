@@ -162,6 +162,9 @@ def wrap_key():
     """
     # Handle CORS preflight
     if request.method == 'OPTIONS':
+        logger.info("=== WRAP OPTIONS (preflight) ===")
+        logger.info(f"Origin: {request.headers.get('Origin', '')}")
+        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
@@ -243,7 +246,7 @@ def wrap_key():
         response = jsonify({'error': 'Internal server error'})
         response.status_code = 500
         response.headers['Content-Type'] = 'application/json'
-        return response
+        return add_cors_headers(response)
 
 
 @app.route('/unwrap', methods=['POST', 'OPTIONS'])
@@ -263,6 +266,9 @@ def unwrap_key():
     """
     # Handle CORS preflight
     if request.method == 'OPTIONS':
+        logger.info("=== UNWRAP OPTIONS (preflight) ===")
+        logger.info(f"Origin: {request.headers.get('Origin', '')}")
+        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
