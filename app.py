@@ -333,12 +333,17 @@ def unwrap_key():
     # Handle CORS preflight
     if request.method == 'OPTIONS':
         logger.info("=== UNWRAP OPTIONS (preflight) ===")
-        logger.info(f"Origin: {request.headers.get('Origin', '')}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
-        response = jsonify({})
         origin = request.headers.get('Origin', '')
-        parsed = urlparse(origin)
-        host = (parsed.hostname or '').lower().rstrip('.')
+        sanitized_origin = origin.replace('\r', '').replace('\n', '')
+        logger.info(f"Origin: {sanitized_origin}")
+        acrh = request.headers.get('Access-Control-Request-Headers', '')
+        sanitized_acrh = acrh.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {sanitized_acrh}")
+        response = jsonify({})
+        # origin already assigned above; reuse it
+        if 'google.com' in origin:
+            parsed = urlparse(origin)
+            host = (parsed.hostname or '').lower().rstrip('.')
         # Only allow origins that are google.com or subdomains of google.com, and require HTTPS scheme
         if parsed.scheme == 'https' and host and (host == "google.com" or host.endswith(".google.com")):
             response.headers['Access-Control-Allow-Origin'] = origin
