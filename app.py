@@ -199,7 +199,7 @@ def wrap_key():
 
     # Log request for debugging
     logger.info(f"=== WRAP REQUEST ===")
-    logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
+    logger.info(f"Request origin: {sanitized_headers.get('Origin', 'No origin header')}")
 
     try:
         data = request.get_json()
