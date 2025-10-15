@@ -15,6 +15,12 @@ from auth import verify_service_account, verify_okta_token, verify_workspace_tok
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def sanitize_for_log(value):
+    if isinstance(value, str):
+        # Remove newlines and carriage returns to prevent log injection
+        return value.replace('\r', '').replace('\n', '')
+    return value
+
 app = Flask(__name__)
 
 # Enable CORS for Google Workspace CSE
@@ -42,7 +48,9 @@ CORS(app,
 @app.before_request
 def log_incoming_request():
     try:
-        logger.info(f">>> {request.method} {request.path} Origin={request.headers.get('Origin', '')}")
+        sanitized_path = sanitize_for_log(request.path)
+        sanitized_origin = sanitize_for_log(request.headers.get('Origin', ''))
+        logger.info(f">>> {request.method} {sanitized_path} Origin={sanitized_origin}")
     except Exception:
         pass
 
