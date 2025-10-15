@@ -111,7 +111,6 @@ def verify_okta_token(token, issuer=None, audience=None, client_id=None):
                 issuer = f"https://{okta_domain}/oauth2/default"
 
         if not audience:
-            audience = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
 
         if not client_id:
             client_id = os.environ.get('IDP_CLIENT_ID', '')
