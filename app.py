@@ -191,7 +191,10 @@ def wrap_key():
         host = ''
         if origin:
             parsed = urlparse(origin)
-            host = parsed.hostname or ''
+            if parsed.hostname is None:
+                logger.warning(f"Malformed or missing hostname in Origin header: '{origin}'")
+            else:
+                host = parsed.hostname
         if host == 'google.com' or host.endswith('.google.com'):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
