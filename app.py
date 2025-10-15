@@ -18,14 +18,20 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 
 # Enable CORS for Google Workspace CSE
-# Google requires CORS to access from https://client-side-encryption.google.com
-CORS(app, origins=[
-    "https://client-side-encryption.google.com",
-    "https://*.google.com",
-    "https://mail.google.com",
-    "https://drive.google.com",
-    "https://docs.google.com"
-], supports_credentials=True)
+# Google requires CORS to access from multiple Google domains
+CORS(app,
+     origins=[
+         "https://admin.google.com",
+         "https://client-side-encryption.google.com",
+         "https://mail.google.com",
+         "https://drive.google.com",
+         "https://docs.google.com",
+         "https://calendar.google.com",
+         "https://meet.google.com"
+     ],
+     supports_credentials=True,
+     allow_headers=["Content-Type", "Authorization"],
+     methods=["GET", "POST", "OPTIONS"])
 
 # Initialize KMS service
 kms_service = KMSService(
