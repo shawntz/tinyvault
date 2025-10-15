@@ -101,6 +101,19 @@ def status():
     }), 200
 
 
+@app.route('/.well-known/cse-configuration', methods=['GET'])
+def cse_configuration():
+    """CSE configuration endpoint for identity provider discovery"""
+    # For Google Workspace users using Google Identity
+    # This tells Google Workspace how to authenticate users
+    return jsonify({
+        'name': 'TinyVault',
+        'client_id': '',  # Not needed for basic setup
+        'discovery_uri': 'https://accounts.google.com/.well-known/openid-configuration',
+        'audience': 'cse-authorization'
+    }), 200
+
+
 @app.route('/v1/wrap', methods=['POST'])
 @require_auth
 def wrap_key():
