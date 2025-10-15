@@ -110,13 +110,18 @@ def status():
 @app.route('/.well-known/cse-configuration', methods=['GET'])
 def cse_configuration():
     """CSE configuration endpoint for identity provider discovery"""
-    # For Google Workspace users using Google Identity
-    # This tells Google Workspace how to authenticate users
+    # Identity provider configuration from environment variables
+    # Supports both Google Identity and third-party IdPs (like Okta)
+    idp_name = os.environ.get('IDP_NAME', 'Google')
+    client_id = os.environ.get('IDP_CLIENT_ID', '')
+    discovery_uri = os.environ.get('IDP_DISCOVERY_URI', 'https://accounts.google.com/.well-known/openid-configuration')
+    audience = os.environ.get('IDP_AUDIENCE', 'cse-authorization')
+
     return jsonify({
-        'name': 'TinyVault',
-        'client_id': '',  # Not needed for basic setup
-        'discovery_uri': 'https://accounts.google.com/.well-known/openid-configuration',
-        'audience': 'cse-authorization'
+        'name': idp_name,
+        'client_id': client_id,
+        'discovery_uri': discovery_uri,
+        'audience': audience
     }), 200
 
 

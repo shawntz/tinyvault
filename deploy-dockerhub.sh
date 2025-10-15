@@ -27,6 +27,17 @@ SERVICE_NAME=${SERVICE_NAME:-cse-kacls}
 read -p "Enter Docker image tag [latest]: " DOCKER_TAG
 DOCKER_TAG=${DOCKER_TAG:-latest}
 
+# Identity Provider configuration
+echo ""
+echo "Identity Provider Configuration:"
+read -p "Enter IdP name (e.g., Google, Okta) [Google]: " IDP_NAME
+IDP_NAME=${IDP_NAME:-Google}
+read -p "Enter IdP Client ID (leave empty for Google Identity): " IDP_CLIENT_ID
+read -p "Enter IdP Discovery URI [https://accounts.google.com/.well-known/openid-configuration]: " IDP_DISCOVERY_URI
+IDP_DISCOVERY_URI=${IDP_DISCOVERY_URI:-https://accounts.google.com/.well-known/openid-configuration}
+read -p "Enter IdP Audience [cse-authorization]: " IDP_AUDIENCE
+IDP_AUDIENCE=${IDP_AUDIENCE:-cse-authorization}
+
 # Custom domain configuration
 echo ""
 read -p "Do you want to use a custom domain? (y/n): " -n 1 -r
@@ -49,6 +60,9 @@ echo "  Service Name: $SERVICE_NAME"
 echo "  KMS Location: $KMS_LOCATION"
 echo "  Authorized Email: $USER_EMAIL"
 echo "  Docker Image: shawnschwartz/tinyvault:$DOCKER_TAG"
+echo "  IdP Name: $IDP_NAME"
+echo "  IdP Client ID: ${IDP_CLIENT_ID:-(not set)}"
+echo "  IdP Discovery URI: $IDP_DISCOVERY_URI"
 if [[ $USE_CUSTOM_DOMAIN =~ ^[Yy]$ ]]; then
     echo "  Custom Domain: $CUSTOM_DOMAIN"
 fi
@@ -74,7 +88,7 @@ gcloud run deploy $SERVICE_NAME \
     --platform managed \
     --region $REGION \
     --allow-unauthenticated \
-    --set-env-vars "GCP_PROJECT_ID=$PROJECT_ID,KMS_LOCATION=$KMS_LOCATION,KMS_KEYRING=cse-keyring,KMS_KEY=cse-key,ALLOWED_EMAILS=$USER_EMAIL" \
+    --set-env-vars "GCP_PROJECT_ID=$PROJECT_ID,KMS_LOCATION=$KMS_LOCATION,KMS_KEYRING=cse-keyring,KMS_KEY=cse-key,ALLOWED_EMAILS=$USER_EMAIL,IDP_NAME=$IDP_NAME,IDP_CLIENT_ID=$IDP_CLIENT_ID,IDP_DISCOVERY_URI=$IDP_DISCOVERY_URI,IDP_AUDIENCE=$IDP_AUDIENCE" \
     --memory 512Mi \
     --cpu 1 \
     --max-instances 3 \
