@@ -4,8 +4,8 @@ Implements the Key Access Control List Service for Google Workspace encryption
 """
 import os
 import logging
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask import Flask, request, jsonify, make_response
+from flask_cors import CORS, cross_origin
 import re
 from functools import wraps
 from kms_service import KMSService
@@ -127,6 +127,7 @@ def cse_configuration():
 
 @app.route('/wrap', methods=['POST', 'OPTIONS'])
 @app.route('/v1/wrap', methods=['POST', 'OPTIONS'])
+@cross_origin(origins=['https://admin.google.com', 'https://client-side-encryption.google.com', 'https://mail.google.com', 'https://drive.google.com', 'https://docs.google.com', 'https://calendar.google.com', 'https://meet.google.com'], supports_credentials=True)
 def wrap_key():
     """
     Wrap a data encryption key (DEK) using the master key in KMS
@@ -142,7 +143,8 @@ def wrap_key():
     """
     # Handle OPTIONS request for CORS preflight
     if request.method == 'OPTIONS':
-        return '', 200
+        response = make_response('', 200)
+        return response
 
     # Require authentication for POST requests
     auth_header = request.headers.get('Authorization', '')
@@ -195,6 +197,7 @@ def wrap_key():
 
 @app.route('/unwrap', methods=['POST', 'OPTIONS'])
 @app.route('/v1/unwrap', methods=['POST', 'OPTIONS'])
+@cross_origin(origins=['https://admin.google.com', 'https://client-side-encryption.google.com', 'https://mail.google.com', 'https://drive.google.com', 'https://docs.google.com', 'https://calendar.google.com', 'https://meet.google.com'], supports_credentials=True)
 def unwrap_key():
     """
     Unwrap a data encryption key (DEK) using the master key in KMS
@@ -210,7 +213,8 @@ def unwrap_key():
     """
     # Handle OPTIONS request for CORS preflight
     if request.method == 'OPTIONS':
-        return '', 200
+        response = make_response('', 200)
+        return response
 
     # Require authentication for POST requests
     auth_header = request.headers.get('Authorization', '')
@@ -262,6 +266,7 @@ def unwrap_key():
 
 @app.route('/privileged_unwrap', methods=['POST', 'OPTIONS'])
 @app.route('/v1/privileged_unwrap', methods=['POST', 'OPTIONS'])
+@cross_origin(origins=['https://admin.google.com', 'https://client-side-encryption.google.com', 'https://mail.google.com', 'https://drive.google.com', 'https://docs.google.com', 'https://calendar.google.com', 'https://meet.google.com'], supports_credentials=True)
 def privileged_unwrap():
     """
     Privileged unwrap for admin access or audit scenarios
@@ -269,7 +274,8 @@ def privileged_unwrap():
     """
     # Handle OPTIONS request for CORS preflight
     if request.method == 'OPTIONS':
-        return '', 200
+        response = make_response('', 200)
+        return response
 
     # Require authentication for POST requests
     auth_header = request.headers.get('Authorization', '')
