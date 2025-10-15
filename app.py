@@ -184,8 +184,11 @@ def wrap_key():
     # Handle CORS preflight
     if request.method == 'OPTIONS':
         logger.info("=== WRAP OPTIONS (preflight) ===")
-        logger.info(f"Origin: {request.headers.get('Origin', '')}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        sanitized_origin = re.sub(r'[\r\n]+', '', request.headers.get('Origin', ''))
+        logger.info(f"Origin: {sanitized_origin}")
+        # Remove all non-printable/control characters to prevent log injection
+        sanitized_headers = re.sub(r'[^\x20-\x7E]', '', request.headers.get('Access-Control-Request-Headers', ''))
+        logger.info(f"Access-Control-Request-Headers: {sanitized_headers}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         host = ''
