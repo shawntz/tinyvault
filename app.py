@@ -318,9 +318,13 @@ def unwrap_key():
         if data:
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'wrappedKey': '[REDACTED]'}}")
 
-        if not data or 'wrappedKey' not in data:
-            logger.warning("Missing wrappedKey in request body")
-            resp = jsonify({'error': 'Missing wrappedKey in request'})
+        # Accept both camelCase and snake_case for wrapped key field
+        has_wrapped_camel = bool(data and 'wrappedKey' in data)
+        has_wrapped_snake = bool(data and 'wrapped_key' in data)
+
+        if not data or (not has_wrapped_camel and not has_wrapped_snake):
+            logger.warning(f"Missing wrapped key in request body. Keys present: {list(data.keys()) if data else 'None'}")
+            resp = jsonify({'error': 'Missing wrappedKey/wrapped_key in request'})
             resp.status_code = 400
             resp.headers['Content-Type'] = 'application/json'
             return add_cors_headers(resp)
@@ -365,7 +369,8 @@ def unwrap_key():
                 return add_cors_headers(resp)
 
         # Proceed with unwrap
-        wrapped_key = data['wrappedKey']
+        wrapped_key = data['wrappedKey'] if has_wrapped_camel else data['wrapped_key']
+        logger.info(f"Unwrap payload received: wrapped_key length={len(wrapped_key) if isinstance(wrapped_key, str) else 'n/a'}")
         plaintext_key = kms_service.unwrap(wrapped_key)
 
         response = jsonify({'key': plaintext_key, 'status': 'success'})
