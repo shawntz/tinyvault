@@ -401,7 +401,9 @@ def privileged_unwrap():
         origin = request.headers.get('Origin', '')
         sanitized_origin = origin.replace('\r', '').replace('\n', '')
         logger.info(f"Origin: {sanitized_origin}")
-        logger.info(f"Access-Control-Request-Headers: {request.headers.get('Access-Control-Request-Headers', '')}")
+        acr_headers = request.headers.get('Access-Control-Request-Headers', '')
+        sanitized_acr_headers = acr_headers.replace('\r', '').replace('\n', '')
+        logger.info(f"Access-Control-Request-Headers: {sanitized_acr_headers}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
         if 'google.com' in origin:
