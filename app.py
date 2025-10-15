@@ -16,14 +16,22 @@ from auth import verify_service_account, verify_okta_token, verify_workspace_tok
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+import unicodedata
+
 def sanitize_for_log(value):
     # Only allow safe types for string conversion
     if isinstance(value, (str, int, float, bool)):
         value_str = str(value)
     else:
         value_str = "<non-primitive>"
-    # Remove all control characters (including newlines, carriage returns, tabs, etc.)
+    # Remove ASCII control characters (including newlines, carriage returns, tabs, etc.)
     sanitized = re.sub(r'[\x00-\x1F\x7F]', '', value_str)
+    # Remove dangerous Unicode characters: line separator, paragraph separator, general control chars.
+    sanitized = ''.join(
+        ch for ch in sanitized
+        if unicodedata.category(ch)[0] not in ('C')  # C = Other (includes controls)
+        and ch not in ('\u2028', '\u2029')
+    )
     sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
     # Optionally limit length to 256 chars to prevent log flooding
     return sanitized[:256]
