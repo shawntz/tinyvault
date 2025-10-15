@@ -324,7 +324,7 @@ def unwrap_key():
 
         if not data or (not has_wrapped_camel and not has_wrapped_snake):
             sanitized_keys = (
-                ', '.join([str(k).replace('\n', '').replace('\r', '') for k in data.keys()])
+                ', '.join([repr(k) for k in data.keys()])
                 if data else 'None'
             )
             logger.warning(f"Missing wrapped key in request body. Keys present: {sanitized_keys}")
