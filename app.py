@@ -206,7 +206,7 @@ def wrap_key():
         data = request.get_json()
         if data:
             safe_keys = [str(key).replace('\r', '').replace('\n', '') for key in data.keys()]
-            logger.info(f"Request body keys: {safe_keys}")
+            logger.info("Request body keys: %s", safe_keys)
         else:
             logger.info("Request body keys: None")
         if data:
