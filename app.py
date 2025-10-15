@@ -152,10 +152,13 @@ def wrap_key():
     # Log request for debugging
     logger.info(f"=== WRAP REQUEST ===")
     logger.info(f"Headers: {dict(request.headers)}")
+    logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
 
     try:
         data = request.get_json()
         logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        if data:
+            logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {data.get('authorization', 'None')}, 'key': '[REDACTED]'}}")
 
         if not data or 'key' not in data:
             return jsonify({'error': 'Missing key in request'}), 400
@@ -190,11 +193,21 @@ def wrap_key():
         logger.info(f"Returning wrap response: wrappedKey length={len(wrapped_key)} chars")
         logger.info(f"Response JSON: {response_data}")
 
-        return jsonify(response_data), 200
+        # Create response with explicit headers for Google CSE
+        response = jsonify(response_data)
+        response.status_code = 200
+        response.headers['Content-Type'] = 'application/json'
+
+        logger.info(f"Wrap response headers: {dict(response.headers)}")
+
+        return response
 
     except Exception as e:
-        logger.error(f"Wrap operation failed: {str(e)}")
-        return jsonify({'error': 'Internal server error'}), 500
+        logger.error(f"Wrap operation failed: {str(e)}", exc_info=True)
+        response = jsonify({'error': 'Internal server error'})
+        response.status_code = 500
+        response.headers['Content-Type'] = 'application/json'
+        return response
 
 
 @app.route('/unwrap', methods=['POST', 'OPTIONS'])
