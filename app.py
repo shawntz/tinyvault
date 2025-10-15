@@ -402,7 +402,7 @@ def privileged_unwrap():
         origin_val = origin_val.replace('\r', '').replace('\n', '')
         logger.info(f"Origin: {origin_val}")
         acrh_val = request.headers.get('Access-Control-Request-Headers', '')
-        acrh_val = acrh_val.replace('\r', '').replace('\n', '')
+        acrh_val = acrh_val.translate({ord('\r'): None, ord('\n'): None})
         logger.info(f"Access-Control-Request-Headers: {acrh_val}")
         response = jsonify({})
         origin = request.headers.get('Origin', '')
