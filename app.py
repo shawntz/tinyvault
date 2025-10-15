@@ -398,7 +398,9 @@ def privileged_unwrap():
     # Handle CORS preflight
     if request.method == 'OPTIONS':
         logger.info("=== PRIVILEGED UNWRAP OPTIONS (preflight) ===")
-        logger.info(f"Origin: {request.headers.get('Origin', '')}")
+        origin_val = request.headers.get('Origin', '')
+        origin_val = origin_val.replace('\r', '').replace('\n', '')
+        logger.info(f"Origin: {origin_val}")
         acrh_val = request.headers.get('Access-Control-Request-Headers', '')
         acrh_val = acrh_val.replace('\r', '').replace('\n', '')
         logger.info(f"Access-Control-Request-Headers: {acrh_val}")
