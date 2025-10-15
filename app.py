@@ -6,6 +6,7 @@ import os
 import logging
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+import re
 from functools import wraps
 from urllib.parse import urlparse
 from kms_service import KMSService
@@ -292,7 +293,9 @@ def wrap_key():
 
         # Explicitly set CORS headers to ensure they're present
         origin = request.headers.get('Origin', '')
-        if 'google.com' in origin:
+        origin_hostname = urlparse(origin).hostname or '' if origin else ''
+        # Allow CORS only for google.com and its subdomains
+        if origin_hostname and (origin_hostname == 'google.com' or origin_hostname.endswith('.google.com')):
             response.headers['Access-Control-Allow-Origin'] = origin
             response.headers['Access-Control-Allow-Methods'] = 'POST, OPTIONS'
             requested_headers = request.headers.get('Access-Control-Request-Headers', '')
