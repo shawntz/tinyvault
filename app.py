@@ -67,7 +67,7 @@ def log_incoming_request():
         sanitized_origin = sanitize_for_log(request.headers.get('Origin', ''))
         logger.info(f">>> {sanitized_method} \"{sanitized_path}\" Origin=\"{sanitized_origin}\"")
     except Exception:
-        pass
+        logger.exception("Exception occurred during request logging")
 
 # Attach CORS headers to all responses when appropriate
 @app.after_request
