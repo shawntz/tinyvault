@@ -435,7 +435,7 @@ def unwrap_key():
         for k, v in dict(request.headers).items() 
     }
     logger.info(f"Headers: {sanitized_headers}")
-    logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
+    logger.info(f"Request origin: {sanitized_headers.get('Origin', 'No origin header')}")
 
     try:
         def sanitize_for_log(obj):
