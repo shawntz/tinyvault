@@ -19,18 +19,35 @@ logger = logging.getLogger(__name__)
 import unicodedata
 
 def sanitize_for_log(value):
+    """
+    Sanitizes user-controlled values for safe inclusion in logs.
+    Removes all ASCII and Unicode linebreak/control characters that could result in log injection.
+    """
     # Only allow safe types for string conversion
     if isinstance(value, (str, int, float, bool)):
         value_str = str(value)
     else:
         value_str = "<non-primitive>"
-    # Remove ASCII control characters (including newlines, carriage returns, tabs, etc.)
-    sanitized = re.sub(r'[\x00-\x1F\x7F]', '', value_str)
-    # Remove dangerous Unicode characters: line separator, paragraph separator, general control chars.
+
+    # Explicitly remove all ASCII and Unicode newlines, carriage returns, tabs, line/paragraph separator, and all control characters
+    # This is needed to avoid log injection via any form of line break/control sep
+    NEWLINES_AND_CONTROLS_RE = re.compile(
+        r'['
+        r'\x00-\x1F'        # ASCII control chars, including \n, \r, \t
+        r'\x7F'             # ASCII DEL
+        r'\u2028'           # Unicode Line Separator
+        r'\u2029'           # Unicode Paragraph Separator
+        r'\u0085'           # Next line
+        r']'
+    )
+    sanitized = NEWLINES_AND_CONTROLS_RE.sub('', value_str)
+
+    # Remove other dangerous Unicode categories (general controls, etc):
     sanitized = ''.join(
         ch for ch in sanitized
         if unicodedata.category(ch) not in ('Cc', 'Cf', 'Cs', 'Co', 'Cn', 'Zl', 'Zp')
     )
+    # Remove delimiter chars that could confuse logs
     sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
     # Optionally limit length to 256 chars to prevent log flooding
     return sanitized[:256]
