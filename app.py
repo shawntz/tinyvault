@@ -409,7 +409,8 @@ def unwrap_key():
         for k, v in dict(request.headers).items() 
     }
     logger.info(f"Headers: {sanitized_headers}")
-    logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
+    origin_for_log = request.headers.get('Origin', 'No origin header').replace('\r', '').replace('\n', '')
+    logger.info(f"Request origin: {origin_for_log}")
 
     try:
         data = request.get_json()
