@@ -305,7 +305,7 @@ def wrap_key():
             authorization = data.get('authorization', None)
             if isinstance(authorization, dict):
                 # Log only the sanitized keys of the authorization dict to avoid sensitive data and log injection
-                safe_auth = {sanitize_str(k): '[REDACTED]' for k in authorization.keys()}
+                safe_auth = {sanitize_str(k).replace('\r', '').replace('\n', ''): '[REDACTED]' for k in authorization.keys()}
             elif isinstance(authorization, str):
                 # Remove newlines and carriage returns to prevent log injection
                 safe_auth = authorization.replace('\r', '').replace('\n', '')
