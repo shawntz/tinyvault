@@ -412,8 +412,6 @@ def unwrap_key():
     logger.info(f"Request origin: {request.headers.get('Origin', 'No origin header')}")
 
     try:
-        data = request.get_json()
-        logger.info(f"Request body keys: { [sanitize_for_log(str(k)) for k in data.keys()] if data else 'None'}")
         def sanitize_for_log(obj):
             if isinstance(obj, dict):
                 return {k: sanitize_for_log(v) for k, v in obj.items()}
@@ -424,6 +422,9 @@ def unwrap_key():
                 return re.sub(r'[\r\n\x00-\x1F\x7F]', '', obj)
             else:
                 return obj
+        data = request.get_json()
+        sanitized_keys = [f'"{sanitize_for_log(str(k))}"' for k in data.keys()] if data else 'None'
+        logger.info(f"Request body keys: [user] {sanitized_keys}")
         if data:
             authorization_sanitized = sanitize_for_log(data.get('authorization', 'None'))
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {authorization_sanitized}, 'wrappedKey': '[REDACTED]'}}")
