@@ -526,6 +526,15 @@ def unwrap_key():
 
 @app.route('/privileged_unwrap', methods=['POST', 'OPTIONS'])
 @app.route('/v1/privileged_unwrap', methods=['POST', 'OPTIONS'])
+def sanitize_log_input(s):
+    """
+    Removes control characters from log input to prevent log injection.
+    """
+    if not isinstance(s, str):
+        s = str(s)
+    # Remove all ASCII control chars (\x00-\x1F and \x7F)
+    return re.sub(r'[\x00-\x1F\x7F]', '', s)
+
 def privileged_unwrap():
     """
     Privileged unwrap for admin access or audit scenarios
@@ -582,10 +591,7 @@ def privileged_unwrap():
             # Verify the Okta JWT token
             user_info = verify_okta_token(authentication_token)
             user_email = user_info['user_email']
-            if isinstance(user_email, str):
-                user_email = user_email.replace('\r', '').replace('\n', '')
-            else:
-                user_email = str(user_email).replace('\r', '').replace('\n', '')
+            user_email = sanitize_log_input(user_email)
             logger.info(f"Privileged unwrap - Authenticated user: {user_email}")
         except Exception as e:
             logger.error(f"Privileged unwrap authentication failed: {str(e)}")
@@ -596,9 +602,8 @@ def privileged_unwrap():
 
         wrapped_key = data['wrappedKey']
         reason = data.get('reason', 'Admin access')
-        # Sanitize user input to mitigate log injection
-        if isinstance(reason, str):
-            reason = reason.replace('\r', '').replace('\n', '')
+        # Robustly sanitize user input to mitigate log injection
+        reason = sanitize_log_input(reason)
 
         logger.warning(f"Privileged unwrap requested by {user_email}. Reason: {reason}")
 
