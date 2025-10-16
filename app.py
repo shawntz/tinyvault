@@ -56,8 +56,8 @@ def sanitize_for_log(value):
         if unicodedata.category(ch) not in ('Cc', 'Cf', 'Cs', 'Co', 'Cn', 'Zl', 'Zp')
     )
     # Remove characters that could confuse log boundaries
-    for delim in ['"', '|', "'", '\\', '[', ']', '{', '}', '`']:
-        sanitized = sanitized.replace(delim, '')
+    delimiters = ['"', '|', "'", '\\', '[', ']', '{', '}', '`']
+    sanitized = sanitized.translate(str.maketrans('', '', ''.join(delimiters)))
 
     # Optionally replace multiple spaces with single space
     sanitized = re.sub(r'\s+', ' ', sanitized)
