@@ -285,7 +285,8 @@ def wrap_key():
                 # Remove newlines and carriage returns to prevent log injection
                 safe_auth = authorization.replace('\r', '').replace('\n', '')
             else:
-                safe_auth = str(authorization)
+                # Sanitize any representation of authorization to prevent log injection
+                safe_auth = str(authorization).replace('\r', '').replace('\n', '')
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {safe_auth}, 'key': '[REDACTED]'}}")
 
         if not data or 'key' not in data:
