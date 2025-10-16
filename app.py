@@ -277,11 +277,11 @@ def wrap_key():
 
     # Log request for debugging
     logger.info(f"=== WRAP REQUEST ===")
-    sanitized_headers = {
-        re.sub(r'[^\x20-\x7E]', '', str(k)): re.sub(r'[^\x20-\x7E]', '', str(v))
+    sanitized_headers_str = '; '.join(
+        f"{re.sub(r'[^\x20-\x7E]', '', str(k)).replace('\r', '').replace('\n', '')}: {re.sub(r'[^\x20-\x7E]', '', str(v)).replace('\r', '').replace('\n', '')}"
         for k, v in request.headers.items()
-    }
-    logger.info("Headers: %s", sanitized_headers)
+    )
+    logger.info("Headers: %s", sanitized_headers_str)
     origin_val = request.headers.get('Origin', 'No origin header')
     origin_val = re.sub(r'[^\x20-\x7E]', '', str(origin_val))
     origin_val = origin_val.replace('\r', '').replace('\n', '')
