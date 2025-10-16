@@ -59,7 +59,7 @@ def sanitize_for_log(value):
     delimiters = ['"', '|', "'", '\\', '[', ']', '{', '}', '`']
     sanitized = sanitized.translate(str.maketrans('', '', ''.join(delimiters)))
 
-    # Optionally replace multiple spaces with single space
+    # Replace multiple spaces with single space
     sanitized = re.sub(r'\s+', ' ', sanitized)
     # Optionally limit length to 256 chars to prevent log flooding
     sanitized = sanitized[:256]
