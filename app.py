@@ -16,6 +16,10 @@ from auth import verify_service_account, verify_okta_token, verify_workspace_tok
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+def sanitize_str(s):
+    # Remove carriage returns, newlines, and other control characters
+    return re.sub(r'[^\x20-\x7E]', '', str(s))
+
 import unicodedata
 
 def sanitize_for_log(value):
@@ -300,8 +304,8 @@ def wrap_key():
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {safe_auth}, 'key': '[REDACTED]'}}")
             authorization = data.get('authorization', None)
             if isinstance(authorization, dict):
-                # Log only the keys of the authorization dict to avoid sensitive data
-                safe_auth = {k: '[REDACTED]' for k in authorization.keys()}
+                # Log only the sanitized keys of the authorization dict to avoid sensitive data and log injection
+                safe_auth = {sanitize_str(k): '[REDACTED]' for k in authorization.keys()}
             elif isinstance(authorization, str):
                 # Remove newlines and carriage returns to prevent log injection
                 safe_auth = authorization.replace('\r', '').replace('\n', '')
