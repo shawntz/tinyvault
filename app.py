@@ -280,6 +280,7 @@ def wrap_key():
     logger.info("Headers: %s", sanitized_headers)
     origin_val = request.headers.get('Origin', 'No origin header')
     origin_val = re.sub(r'[^\x20-\x7E]', '', str(origin_val))
+    origin_val = origin_val.replace('\r', '').replace('\n', '')
     logger.info(f"Request origin: {origin_val}")
 
     try:
