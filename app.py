@@ -21,7 +21,8 @@ import unicodedata
 def sanitize_for_log(value):
     """
     Sanitizes user-controlled values for safe inclusion in logs.
-    Removes all ASCII and Unicode linebreak/control characters that could result in log injection.
+    Removes all ASCII/Unicode linebreak/control/delimiter/ambiguous whitespace characters to prevent log/entry injection.
+    Clearly marks user-controlled field for logs.
     """
     # Only allow safe types for string conversion
     if isinstance(value, (str, int, float, bool)):
@@ -29,28 +30,41 @@ def sanitize_for_log(value):
     else:
         value_str = "<non-primitive>"
 
-    # Explicitly remove all ASCII and Unicode newlines, carriage returns, tabs, line/paragraph separator, and all control characters
-    # This is needed to avoid log injection via any form of line break/control sep
-    NEWLINES_AND_CONTROLS_RE = re.compile(
+    # Remove ASCII/Unicode controls, line/paragraph/hard/soft separators, ambiguous whitespace (including tabs, zero-width, etc)
+    DANGEROUS_CHARS_RE = re.compile(
         r'['
-        r'\x00-\x1F'        # ASCII control chars, including \n, \r, \t
+        r'\x00-\x1F'        # ASCII control chars (\n, \r, \t, etc)
         r'\x7F'             # ASCII DEL
         r'\u2028'           # Unicode Line Separator
         r'\u2029'           # Unicode Paragraph Separator
-        r'\u0085'           # Next line
+        r'\u0085'           # Unicode Next line
+        r'\u200B'           # Zero width space
+        r'\u200C'           # Zero width non-joiner
+        r'\u200D'           # Zero width joiner
+        r'\u2060'           # Word joiner
+        r'\uFEFF'           # Zero width no-break space
+        r'\u202F'           # Narrow No-Break Space
+        r'\u00A0'           # Non-breaking Space
+        r'\u180E'           # Mongolian vowel separator
         r']'
     )
-    sanitized = NEWLINES_AND_CONTROLS_RE.sub('', value_str)
+    sanitized = DANGEROUS_CHARS_RE.sub('', value_str)
 
-    # Remove other dangerous Unicode categories (general controls, etc):
+    # Remove other dangerous Unicode categories (control, surrogate, private-use, etc.)
     sanitized = ''.join(
         ch for ch in sanitized
         if unicodedata.category(ch) not in ('Cc', 'Cf', 'Cs', 'Co', 'Cn', 'Zl', 'Zp')
     )
-    # Remove delimiter chars that could confuse logs
-    sanitized = sanitized.replace('"', '').replace('|', '').replace("'", '')
+    # Remove characters that could confuse log boundaries
+    for delim in ['"', '|', "'", '\\', '[', ']', '{', '}', '`']:
+        sanitized = sanitized.replace(delim, '')
+
+    # Optionally replace multiple spaces with single space
+    sanitized = re.sub(r'\s+', ' ', sanitized)
     # Optionally limit length to 256 chars to prevent log flooding
-    return sanitized[:256]
+    sanitized = sanitized[:256]
+    # Clearly delimit and mark user input in the log
+    return f"<UserValue:{sanitized}>"
 
 app = Flask(__name__)
 
@@ -82,7 +96,8 @@ def log_incoming_request():
         sanitized_method = sanitize_for_log(request.method)
         sanitized_path = sanitize_for_log(request.path)
         sanitized_origin = sanitize_for_log(request.headers.get('Origin', ''))
-        logger.info(f">>> {sanitized_method} \"{sanitized_path}\" Origin=\"{sanitized_origin}\"")
+        # Clearly mark user controlled fields in log entry
+        logger.info(f">>> Method={sanitized_method} Path={sanitized_path} Origin={sanitized_origin}")
     except Exception:
         logger.exception("Exception occurred during request logging")
 
