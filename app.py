@@ -228,7 +228,7 @@ def wrap_key():
         safe_origin_header = origin_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
         logger.info(f"Origin: {safe_origin_header}")
         acrh_header = request.headers.get('Access-Control-Request-Headers', '')
-        safe_acrh_header = acrh_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
+        safe_acrh_header = re.sub(r'[^\x20-\x7E]', '', acrh_header)
         logger.info(f"Access-Control-Request-Headers: {safe_acrh_header}")
         sanitized_origin = re.sub(r'[^\x20-\x7E]', '', request.headers.get('Origin', ''))
         logger.info(f"Origin: {sanitized_origin}")
