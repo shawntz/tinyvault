@@ -260,7 +260,7 @@ def wrap_key():
         re.sub(r'[^\x20-\x7E]', '', str(k)): re.sub(r'[^\x20-\x7E]', '', str(v))
         for k, v in request.headers.items()
     }
-    logger.info(f"Headers: {sanitized_headers}")
+    logger.info("Headers: %s", sanitized_headers)
     origin_val = request.headers.get('Origin', 'No origin header')
     origin_val = re.sub(r'[^\x20-\x7E]', '', str(origin_val))
     logger.info(f"Request origin: {origin_val}")
