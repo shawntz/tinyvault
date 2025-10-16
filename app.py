@@ -230,7 +230,7 @@ def wrap_key():
         acrh_header = request.headers.get('Access-Control-Request-Headers', '')
         safe_acrh_header = acrh_header.replace('\r\n', '').replace('\r', '').replace('\n', '')
         logger.info(f"Access-Control-Request-Headers: {safe_acrh_header}")
-        sanitized_origin = re.sub(r'[\r\n]+', '', request.headers.get('Origin', ''))
+        sanitized_origin = re.sub(r'[^\x20-\x7E]', '', request.headers.get('Origin', ''))
         logger.info(f"Origin: {sanitized_origin}")
         # Remove all non-printable/control characters to prevent log injection
         sanitized_headers = re.sub(r'[^\x20-\x7E]', '', request.headers.get('Access-Control-Request-Headers', ''))
