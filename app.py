@@ -399,7 +399,12 @@ def unwrap_key():
     # Log request for debugging
     logger.info(f"=== UNWRAP REQUEST ===")
     # Redact sensitive headers and sanitize values before logging
-    safe_headers = {k: ('<redacted>' if k.lower() in {'authorization','cookie','set-cookie'} else str(v).replace('\r','').replace('\n','')) for k, v in request.headers.items()}
+    safe_headers = {
+        k.replace('\r', '').replace('\n', ''):
+            ('<redacted>' if k.lower() in {'authorization', 'cookie', 'set-cookie'}
+             else str(v).replace('\r', '').replace('\n', ''))
+        for k, v in request.headers.items()
+    }
     logger.info(f"Headers: {safe_headers}")
     origin_val = request.headers.get('Origin', 'No origin header')
     origin_val = origin_val.replace('\r', '').replace('\n', '')
