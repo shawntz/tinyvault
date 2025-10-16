@@ -450,8 +450,8 @@ def unwrap_key():
             return re.sub(r'[\r\n\x00-\x1F\x7F]', '', s).strip()
 
         data = request.get_json()
-        sanitized_keys = [f'"{sanitize_for_log(k)}"' for k in (data.keys() if data else [])] if data else 'None'
-        logger.info(f"Request body keys: [user input sanitized] {sanitized_keys}")
+        sanitized_keys = [sanitize_for_log(k) for k in (data.keys() if data else [])] if data else None
+        logger.info("Request body keys: [user input sanitized] %r", sanitized_keys)
         if data:
             authorization_sanitized = sanitize_for_log(data.get('authorization', 'None'))
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {authorization_sanitized}, 'wrappedKey': '[REDACTED]'}}")
