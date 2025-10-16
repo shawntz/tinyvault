@@ -444,18 +444,15 @@ def unwrap_key():
 
     try:
         def sanitize_for_log(obj):
-            if isinstance(obj, dict):
-                return {k: sanitize_for_log(v) for k, v in obj.items()}
-            elif isinstance(obj, list):
-                return [sanitize_for_log(v) for v in obj]
-            elif isinstance(obj, str):
-                # Remove CR and LF characters and any non-printable ascii control chars
-                return re.sub(r'[\r\n\x00-\x1F\x7F]', '', obj)
-            else:
-                return obj
+            # Always convert to string and replace dangerous chars (CR, LF, control chars, DEL) with a visible '?'
+            s = str(obj)
+            # replace CR, LF, control chars, DEL with '?', and strip leading/trailing spaces
+            return re.sub(r'[\r\n\x00-\x1F\x7F]', '?', s).strip()
+
         data = request.get_json()
-        sanitized_keys = [f'"{sanitize_for_log(str(k))}"' for k in data.keys()] if data else 'None'
-        logger.info(f"Request body keys: [user] {sanitized_keys}")
+        sanitized_keys = [sanitize_for_log(k) for k in (data.keys() if data else [])] if data else None
+        sanitized_keys_str = ', '.join(sanitized_keys) if sanitized_keys else 'None'
+        logger.info("Request body keys: [user input sanitized] %s", sanitized_keys_str)
         if data:
             authorization_sanitized = sanitize_for_log(data.get('authorization', 'None'))
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {authorization_sanitized}, 'wrappedKey': '[REDACTED]'}}")
