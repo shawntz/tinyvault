@@ -444,14 +444,15 @@ def unwrap_key():
 
     try:
         def sanitize_for_log(obj):
-            # Always convert to string and remove dangerous chars (CR, LF, all ASCII control chars)
+            # Always convert to string and replace dangerous chars (CR, LF, control chars, DEL) with a visible '?'
             s = str(obj)
-            # remove CR, LF, control chars, DEL; also strip leading/trailing spaces for safety
-            return re.sub(r'[\r\n\x00-\x1F\x7F]', '', s).strip()
+            # replace CR, LF, control chars, DEL with '?', and strip leading/trailing spaces
+            return re.sub(r'[\r\n\x00-\x1F\x7F]', '?', s).strip()
 
         data = request.get_json()
         sanitized_keys = [sanitize_for_log(k) for k in (data.keys() if data else [])] if data else None
-        logger.info("Request body keys: [user input sanitized] %r", sanitized_keys)
+        sanitized_keys_str = ', '.join(sanitized_keys) if sanitized_keys else 'None'
+        logger.info("Request body keys: [user input sanitized] %s", sanitized_keys_str)
         if data:
             authorization_sanitized = sanitize_for_log(data.get('authorization', 'None'))
             logger.info(f"Full request body (excluding sensitive key): {{'authentication': '***', 'authorization': {authorization_sanitized}, 'wrappedKey': '[REDACTED]'}}")
