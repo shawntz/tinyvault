@@ -413,7 +413,7 @@ def unwrap_key():
 
     try:
         data = request.get_json()
-        logger.info(f"Request body keys: {data.keys() if data else 'None'}")
+        logger.info(f"Request body keys: { [sanitize_for_log(str(k)) for k in data.keys()] if data else 'None'}")
         def sanitize_for_log(obj):
             if isinstance(obj, dict):
                 return {k: sanitize_for_log(v) for k, v in obj.items()}
