@@ -241,7 +241,7 @@ def wrap_key():
         if origin:
             parsed = urlparse(origin)
             if parsed.hostname is None:
-                logger.warning(f"Malformed or missing hostname in Origin header: '{origin}'")
+                safe_origin = origin.replace('\r\n', '').replace('\r', '').replace('\n', '')
             else:
                 host = parsed.hostname
         if host == 'google.com' or host.endswith('.google.com'):
