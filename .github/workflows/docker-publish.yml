@@ -144,7 +144,7 @@ jobs:
       - name: Docker Hub Description
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main' && steps.check_docker.outputs.docker_configured == 'true' && steps.docker_build.outcome == 'success'
         continue-on-error: true  # Don't fail workflow if description update fails
-        uses: peter-evans/dockerhub-description@v4
+        uses: peter-evans/dockerhub-description@v5
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
