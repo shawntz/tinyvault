@@ -4,6 +4,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker Hub](https://img.shields.io/badge/docker-tinyvault-blue.svg)](https://hub.docker.com/r/shawnschwartz/tinyvault)
+[![Docker Pulls](https://img.shields.io/docker/pulls/shawnschwartz/tinyvault.svg)](https://hub.docker.com/r/shawnschwartz/tinyvault)
 [![Cloud Run](https://img.shields.io/badge/deploy-Cloud%20Run-4285F4.svg)](https://cloud.google.com/run)
 
 > ⚠️ **IMPORTANT DISCLAIMER**: TinyVault is an **unaudited, open-source project** for personal use and learning. It has NOT been professionally audited or certified for compliance (HIPAA, PCI, FedRAMP, etc.). While it uses secure Google Cloud components, TinyVault itself is a DIY solution. **Use at your own risk.** For mission-critical or regulated data, consider professionally audited enterprise solutions.
